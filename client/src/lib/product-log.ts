@@ -25,6 +25,6 @@ export async function track(
       user_id: session?.user.id ?? null,
     });
   } catch {
-    // Analytics must never break the product.
+    // Product logging must never break the UI.
   }
 }

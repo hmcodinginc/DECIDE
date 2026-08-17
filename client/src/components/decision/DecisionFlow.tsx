@@ -11,7 +11,7 @@ import { ROUTES } from "@/config/routes";
 import { nowIso } from "@/lib/format";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntitlements } from "@/hooks/useEntitlements";
-import { track } from "@/services/analytics/events";
+import { track } from "@/lib/product-log";
 import { suggestCriteria } from "@/services/decision/criteria";
 import { analyzeDecision, createDraft, emptyOption } from "@/services/decision/engine";
 import { decisionRepository } from "@/services/decision/repository";

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Section } from "@/components/common/Section";
 import { PricingCards } from "@/components/pricing/PricingCards";
-import { track } from "@/services/analytics/events";
+import { track } from "@/lib/product-log";
 import { useNavigate } from "react-router";
 import { ROUTES } from "@/config/routes";
 import type { PlanId } from "@/config/plans";

@@ -8,7 +8,7 @@ import { PricingSection } from "@/components/landing/PricingSection";
 import { ProblemSection } from "@/components/landing/ProblemSection";
 import { SolutionSection } from "@/components/landing/SolutionSection";
 import { WhySection } from "@/components/landing/WhySection";
-import { track } from "@/services/analytics/events";
+import { track } from "@/lib/product-log";
 import { usePageTitle } from "@/hooks/usePageTitle";
 
 function LandingPage() {

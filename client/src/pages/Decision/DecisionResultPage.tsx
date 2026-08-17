@@ -15,7 +15,7 @@ import { ROUTES } from "@/config/routes";
 import { useAuth } from "@/hooks/useAuth";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { decisionRepository } from "@/services/decision/repository";
-import { track } from "@/services/analytics/events";
+import { track } from "@/lib/product-log";
 import { toast } from "sonner";
 import type { DecisionRecord } from "@/types/decision";
 

@@ -9,7 +9,7 @@ import { ROUTES } from "@/config/routes";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntitlements } from "@/hooks/useEntitlements";
 import { billingService } from "@/services/billing/razorpay";
-import { track } from "@/services/analytics/events";
+import { track } from "@/lib/product-log";
 
 declare global {
   interface Window {

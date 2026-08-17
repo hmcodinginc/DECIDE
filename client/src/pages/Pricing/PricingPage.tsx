@@ -4,7 +4,7 @@ import { Container } from "@/components/common/Container";
 import { PricingCards } from "@/components/pricing/PricingCards";
 import { ROUTES } from "@/config/routes";
 import type { PlanId } from "@/config/plans";
-import { track } from "@/services/analytics/events";
+import { track } from "@/lib/product-log";
 import { usePageTitle } from "@/hooks/usePageTitle";
 
 function PricingPage() {
