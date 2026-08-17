@@ -1,0 +1,10 @@
+{
+  "name": "decide",
+  "private": true,
+  "description": "DECIDE — Stop comparing. Get a decision.",
+  "scripts": {
+    "dev": "npm run dev --prefix client",
+    "build": "npm run build --prefix client",
+    "preview": "npm run preview --prefix client"
+  }
+}

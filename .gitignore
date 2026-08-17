@@ -1,0 +1,41 @@
+# Dependencies
+node_modules
+
+# Builds
+dist
+dist-ssr
+.vercel
+
+# Environment
+.env
+.env.*
+!.env.example
+client/.env
+client/.env.*
+!client/.env.example
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Editor
+.idea
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Supabase
+supabase/.temp
+supabase/.branches
+
+# Misc
+*.local
