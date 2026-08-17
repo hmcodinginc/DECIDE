@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Container } from "@/components/common/Container";
-import { EmptyState, ErrorState } from "@/components/common/EmptyState";
+import { EmptyState } from "@/components/common/EmptyState";
 import { PageSkeleton } from "@/components/common/PageSkeleton";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/config/routes";
@@ -14,17 +14,23 @@ function HistoryPage() {
   const { user } = useAuth();
   const [items, setItems] = useState<DecisionRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     decisionRepository
       .list(user?.id ?? null)
-      .then((records) => {
-        if (active) setItems(records.filter((item) => item.status === "complete"));
+      .then((result) => {
+        if (!active) return;
+        setItems(result.items.filter((item) => item.status === "complete"));
+        setWarning(result.warning ?? null);
       })
-      .catch((caught: Error) => {
-        if (active) setError(caught.message);
+      .catch(() => {
+        if (active) {
+          setWarning(
+            "We couldn't load your decisions right now. Your current decision is still safe locally.",
+          );
+        }
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -40,11 +46,12 @@ function HistoryPage() {
     <Container className="max-w-3xl pt-28 pb-24">
       <h1 className="font-display text-4xl">My Decisions</h1>
       <p className="mt-3 text-muted-foreground">Reopen anything DECIDE already settled.</p>
-      {error ? (
-        <div className="mt-10">
-          <ErrorState title="Couldn't load decisions" description={error} />
-        </div>
-      ) : items.length === 0 ? (
+      {warning ? (
+        <p className="mt-6 rounded-2xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-muted-foreground">
+          {warning}
+        </p>
+      ) : null}
+      {items.length === 0 ? (
         <div className="mt-10">
           <EmptyState
             title="No decisions yet"

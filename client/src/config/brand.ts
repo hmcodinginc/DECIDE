@@ -6,5 +6,8 @@ export const BRAND = {
   promise: "Too many choices. One clear answer.",
 } as const;
 
+const configuredSite = import.meta.env.VITE_SITE_URL?.replace(/\/$/, "");
+
 export const SITE_URL =
-  import.meta.env.VITE_SITE_URL?.replace(/\/$/, "") || "https://decide.hmcoding.com";
+  configuredSite ||
+  (import.meta.env.DEV ? "http://localhost:5173" : "https://decide.hmcoding.com");

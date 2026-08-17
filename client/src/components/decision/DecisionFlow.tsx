@@ -15,7 +15,8 @@ import { track } from "@/services/analytics/events";
 import { suggestCriteria } from "@/services/decision/criteria";
 import { analyzeDecision, createDraft, emptyOption } from "@/services/decision/engine";
 import { decisionRepository } from "@/services/decision/repository";
-import { consumeAnalysis } from "@/services/billing/entitlements";
+import { consumeAnalysis, LimitReachedError } from "@/services/billing/entitlements";
+import { toast } from "sonner";
 import type { DecisionRecord } from "@/types/decision";
 
 const STEPS = ["question", "options", "priorities", "ratings"] as const;
@@ -70,18 +71,24 @@ function DecisionFlow() {
         result,
         updatedAt: nowIso(),
       };
-      await decisionRepository.save(complete);
+      const saved = await decisionRepository.save(complete);
+      if (saved.warning) toast.error(saved.warning);
       await refresh();
       void track("decision_completed");
-      void navigate(ROUTES.decision(complete.id));
+      void navigate(ROUTES.decision(saved.record.id));
     } catch (caught) {
+      if (caught instanceof LimitReachedError) {
+        void track("free_limit_reached");
+        void navigate(`${ROUTES.billing}?reason=limit`);
+        return;
+      }
       const err = caught as Error & { code?: string };
       if (err.code === "LIMIT_REACHED") {
         void track("free_limit_reached");
         void navigate(`${ROUTES.billing}?reason=limit`);
         return;
       }
-      setError(err.message || "Something went wrong. Try again.");
+      setError("We couldn't complete this decision. Try again.");
     } finally {
       setBusy(false);
     }

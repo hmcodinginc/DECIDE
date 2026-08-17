@@ -39,12 +39,13 @@ export const authService = {
 
   async signUp(email: string, password: string) {
     if (!supabase) throw new Error("Authentication is not connected yet.");
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { emailRedirectTo: `${SITE_URL}${ROUTES.authCallback}` },
     });
     if (error) throw error;
+    return { session: data.session };
   },
 
   async signInWithGoogle() {

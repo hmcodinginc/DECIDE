@@ -1,10 +1,13 @@
 import { Container } from "@/components/common/Container";
 import { Button } from "@/components/ui/button";
+import { ROUTES } from "@/config/routes";
 import { useAuth } from "@/hooks/useAuth";
 import { authService } from "@/services/auth/auth-service";
+import { useNavigate } from "react-router";
 
 function SettingsPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   return (
     <Container className="max-w-lg pt-28 pb-24">
       <h1 className="font-display text-4xl">Settings</h1>
@@ -17,7 +20,13 @@ function SettingsPage() {
         </p>
         <p className="mt-2">{user?.email ?? "—"}</p>
       </div>
-      <Button className="mt-8" variant="outline" onClick={() => void authService.signOut()}>
+      <Button
+        className="mt-8"
+        variant="outline"
+        onClick={() => {
+          void authService.signOut().then(() => navigate(ROUTES.home));
+        }}
+      >
         Log out
       </Button>
     </Container>

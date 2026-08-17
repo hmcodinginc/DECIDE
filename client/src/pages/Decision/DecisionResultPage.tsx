@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { decisionRepository } from "@/services/decision/repository";
 import { track } from "@/services/analytics/events";
+import { toast } from "sonner";
 import type { DecisionRecord } from "@/types/decision";
 
 function DecisionResultPage() {
@@ -53,7 +54,12 @@ function DecisionResultPage() {
       void navigate(`${ROUTES.login}?next=${encodeURIComponent(ROUTES.decision(decision.id))}`);
       return;
     }
-    await decisionRepository.save({ ...decision, userId: user.id });
+    const saved = await decisionRepository.save({ ...decision, userId: user.id });
+    if (saved.warning) {
+      toast.error(saved.warning);
+      return;
+    }
+    toast.success("Decision saved.");
     void track("decision_saved");
   };
 
@@ -112,7 +118,11 @@ function DecisionResultPage() {
         decision={decision}
         onChange={(next) => {
           setDecision(next);
-          void decisionRepository.save({ ...next, userId: user?.id ?? next.userId });
+          void decisionRepository
+            .save({ ...next, userId: user?.id ?? next.userId })
+            .then((saved) => {
+              if (saved.warning) toast.error(saved.warning);
+            });
         }}
       />
       <div className="flex flex-wrap gap-3">

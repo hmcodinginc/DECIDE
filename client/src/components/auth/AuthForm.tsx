@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ROUTES } from "@/config/routes";
+import { toUserMessage } from "@/lib/errors";
 import { emailSchema, passwordSchema } from "@/lib/validation/decision";
 import { authService } from "@/services/auth/auth-service";
 
@@ -34,7 +35,9 @@ function AuthForm({ mode }: AuthFormProps) {
       return;
     }
     if (!authService.configured) {
-      setError("Authentication isn't connected yet. Add Supabase keys to continue.");
+      setError(
+        "Authentication isn't connected yet. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to client/.env.local.",
+      );
       return;
     }
     setBusy(true);
@@ -44,11 +47,15 @@ function AuthForm({ mode }: AuthFormProps) {
         await authService.signInWithPassword(email, password);
         void navigate(next);
       } else {
-        await authService.signUp(email, password);
-        setNotice("Check your email to confirm, then log in.");
+        const { session } = await authService.signUp(email, password);
+        if (session) {
+          void navigate(next);
+        } else {
+          setNotice("Check your email to confirm, then log in.");
+        }
       }
     } catch (caught) {
-      setError((caught as Error).message);
+      setError(toUserMessage(caught, "Couldn't complete that. Try again."));
     } finally {
       setBusy(false);
     }
@@ -79,7 +86,7 @@ function AuthForm({ mode }: AuthFormProps) {
         />
       </div>
       {error ? <p className="text-sm text-red-300">{error}</p> : null}
-      {notice ? <p className="text-sm text-gold">{notice}</p> : null}
+      {notice ? <p className="mt-0 text-sm text-gold">{notice}</p> : null}
       <Button className="w-full" type="submit" disabled={busy}>
         {mode === "login" ? "Log in" : "Create account"}
       </Button>
@@ -87,7 +94,11 @@ function AuthForm({ mode }: AuthFormProps) {
         className="w-full"
         type="button"
         variant="outline"
-        onClick={() => void authService.signInWithGoogle().catch((caught: Error) => setError(caught.message))}
+        onClick={() =>
+          void authService.signInWithGoogle().catch((caught: Error) =>
+            setError(toUserMessage(caught, "Google sign-in isn't configured yet. Use email instead.")),
+          )
+        }
       >
         Continue with Google
       </Button>

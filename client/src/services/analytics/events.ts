@@ -10,10 +10,21 @@ export type ProductEvent =
   | "checkout_started"
   | "subscription_created";
 
-export async function track(name: ProductEvent, properties: Record<string, string | number | boolean | null> = {}) {
+export async function track(
+  name: ProductEvent,
+  properties: Record<string, string | number | boolean | null> = {},
+) {
   if (!supabase || !isSupabaseConfigured) return;
-  await supabase.from("product_events").insert({
-    name,
-    properties,
-  });
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    await supabase.from("product_events").insert({
+      name,
+      properties,
+      user_id: session?.user.id ?? null,
+    });
+  } catch {
+    // Analytics must never break the product.
+  }
 }

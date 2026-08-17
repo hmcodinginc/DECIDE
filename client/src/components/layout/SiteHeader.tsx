@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { BrandMark } from "@/components/common/BrandMark";
 import { Container } from "@/components/common/Container";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { authService } from "@/services/auth/auth-service";
 function SiteHeader() {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const scrolled = useScrolled();
   const isLanding = location.pathname === ROUTES.home;
 
@@ -62,7 +63,11 @@ function SiteHeader() {
                 <DropdownMenuItem asChild>
                   <Link to={ROUTES.billing}>Billing</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => void authService.signOut()}>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    void authService.signOut().then(() => navigate(ROUTES.home));
+                  }}
+                >
                   Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>

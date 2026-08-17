@@ -8,9 +8,13 @@ dist-ssr
 
 # Environment
 .env
+.env.local
+.env.*.local
 .env.*
 !.env.example
 client/.env
+client/.env.local
+client/.env.*.local
 client/.env.*
 !client/.env.example
 

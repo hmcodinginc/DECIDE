@@ -1,13 +1,22 @@
 import { GUEST_ANALYSIS_LIMIT, getPlan, type PlanId } from "@/config/plans";
+import { toUserMessage } from "@/lib/errors";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase/client";
 import { localDecisionStore } from "@/services/decision/local-store";
 import type { Entitlement } from "@/types/billing";
 
-const UNLIMITED: Entitlement = {
-  plan: "premium",
-  status: "active",
+export class LimitReachedError extends Error {
+  code = "LIMIT_REACHED" as const;
+  constructor(message = "You've used your free decisions.") {
+    super(message);
+    this.name = "LimitReachedError";
+  }
+}
+
+const LOCAL_DEV_OPEN: Entitlement = {
+  plan: "free",
+  status: "none",
   remaining: null,
-  limit: null,
+  limit: 5,
   periodEnd: null,
   canAnalyze: true,
 };
@@ -26,7 +35,7 @@ export async function getEntitlement(userId: string | null): Promise<Entitlement
     };
   }
 
-  if (!supabase || !isSupabaseConfigured) return UNLIMITED;
+  if (!supabase || !isSupabaseConfigured) return LOCAL_DEV_OPEN;
 
   const { data, error } = await supabase.rpc("get_entitlement");
   if (error) throw error;
@@ -53,16 +62,25 @@ export async function consumeAnalysis(userId: string | null, decisionId: string)
     localDecisionStore.incrementGuestAnalyses();
     return getEntitlement(null);
   }
-  if (!supabase || !isSupabaseConfigured) return UNLIMITED;
+  if (!supabase || !isSupabaseConfigured) return LOCAL_DEV_OPEN;
   const { data, error } = await supabase.rpc("try_consume_decision", {
     p_decision_id: decisionId,
   });
-  if (error) throw error;
-  const row = data as { allowed: boolean; remaining: number | null; plan: PlanId; message?: string };
+  if (error) {
+    throw new Error(
+      toUserMessage(error, "We couldn't complete this decision. Try again."),
+    );
+  }
+  const row = data as {
+    allowed: boolean;
+    remaining: number | null;
+    plan: PlanId;
+    message?: string;
+  };
   if (!row.allowed) {
-    const error = new Error(row.message ?? "You've used your free decisions.");
-    (error as Error & { code: string }).code = "LIMIT_REACHED";
-    throw error;
+    throw new LimitReachedError(
+      row.message ?? "You've used your free decisions.",
+    );
   }
   return getEntitlement(userId);
 }

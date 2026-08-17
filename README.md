@@ -50,46 +50,39 @@ npm install
 npm run dev
 ```
 
-The decision flow works **without** Supabase. Auth, history sync, usage limits, and billing activate when environment variables are set.
+The decision flow works **without** Supabase. Auth, cloud history, and the 5-lifetime free limit activate when `client/.env.local` has the project URL and anon/publishable key.
 
 ### Client environment
 
+Copy `client/.env.example` to `client/.env.local` (never commit it):
+
 ```
 VITE_SITE_URL=http://localhost:5173
-VITE_SUPABASE_URL=
-VITE_SUPABASE_ANON_KEY=
-VITE_RAZORPAY_KEY_ID=
+VITE_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+VITE_SUPABASE_ANON_KEY=YOUR_ANON_OR_PUBLISHABLE_KEY
 ```
 
-Never put the Supabase service role key, Razorpay secret, or webhook secret in `VITE_` variables.
+Never put the service role key, database password, Razorpay secret, or webhook secret in `VITE_` variables.
 
-### Supabase
+### Supabase dashboard (manual)
 
-1. Create a project on the free tier.
-2. Run `supabase/migrations/0001_init.sql` in the SQL editor (or `supabase db push`).
-3. Enable Email and (optionally) Google auth.
-4. Deploy functions:
+GitHub integration is already set to deploy from `main`. After this repo is on `main`, confirm these in the DECIDE project:
 
-```bash
-supabase functions deploy create-checkout
-supabase functions deploy razorpay-webhook
+1. **Authentication → Providers → Email** enabled.
+2. **Authentication → URL configuration**
+   - Site URL: `http://localhost:5173` while developing locally
+   - Redirect URLs: `http://localhost:5173/auth/callback`, `http://localhost:5173/reset-password`, and later `https://decide.hmcoding.com/**`
+3. **Google** is optional. Enable it only after adding a free Google Cloud OAuth client. Until then, the Google button stays visible and tells the user to use email.
+4. For local testing, **Confirm email** can be turned off so signup creates a session immediately (still free).
+
+Razorpay checkout is scaffolded in `supabase/functions/` and will be connected in a later step. Do not deploy those functions until then.
+
+### Migrations
+
 ```
-
-Set function secrets:
-
+supabase/migrations/0001_init.sql          schema, RLS, entitlements
+supabase/migrations/0002_consume_lock.sql  serialized, idempotent usage
 ```
-RAZORPAY_KEY_ID
-RAZORPAY_KEY_SECRET
-RAZORPAY_WEBHOOK_SECRET
-RAZORPAY_PLAN_PRO
-RAZORPAY_PLAN_PREMIUM
-```
-
-Create matching Razorpay subscription plans (₹500 and ₹2,000 monthly) and paste their plan IDs into those secrets. Point the Razorpay webhook at:
-
-`https://<project>.supabase.co/functions/v1/razorpay-webhook`
-
-Events to enable: `subscription.authenticated`, `subscription.activated`, `subscription.charged`, `subscription.cancelled`, `subscription.completed`, `payment.failed`.
 
 ## Deploy (Vercel)
 

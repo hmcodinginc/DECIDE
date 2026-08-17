@@ -28,6 +28,9 @@ function AuthProvider({ children }: { children: ReactNode }) {
       .then((session) => {
         if (active) setUser(toAuthUser(session?.user ?? null));
       })
+      .catch(() => {
+        if (active) setUser(null);
+      })
       .finally(() => {
         if (active) setLoading(false);
       });
