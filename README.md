@@ -50,7 +50,7 @@ npm install
 npm run dev
 ```
 
-The decision flow works **without** Supabase. Auth, cloud history, and the 5-lifetime free limit activate when `client/.env.local` has the project URL and anon/publishable key.
+The decision flow works **without** Supabase. Auth, cloud history, and the 5-lifetime free limit activate when `client/.env.local` has the project URL and anon/publishable key. A `.env` at the repository root is **not** loaded — Vite's project root is `client/`.
 
 ### Client environment
 
