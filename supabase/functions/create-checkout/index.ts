@@ -45,6 +45,14 @@ Deno.serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey);
 
+    const { data: current } = await admin
+      .from("subscriptions")
+      .select(
+        "plan, status, razorpay_subscription_id, razorpay_customer_id, current_period_start, current_period_end",
+      )
+      .eq("user_id", user.id)
+      .maybeSingle();
+
     const subscription = await razorpayFetch("/subscriptions", razorpayKeyId, razorpaySecret, {
       method: "POST",
       body: JSON.stringify({
@@ -55,16 +63,20 @@ Deno.serve(async (req) => {
       }),
     });
 
-    await admin.from("subscriptions").upsert(
-      {
-        user_id: user.id,
-        plan: body.plan,
-        status: "none",
-        razorpay_subscription_id: subscription.id,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" },
-    );
+    // Live paid rows stay untouched until the webhook confirms the new subscription.
+    // Free / expired / cancelled users still get a pending checkout row.
+    if (!isLivePaidSubscription(current)) {
+      await admin.from("subscriptions").upsert(
+        {
+          user_id: user.id,
+          plan: body.plan,
+          status: "none",
+          razorpay_subscription_id: subscription.id,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" },
+      );
+    }
 
     return json({
       keyId: razorpayKeyId,
@@ -77,6 +89,20 @@ Deno.serve(async (req) => {
     return json({ error: (error as Error).message }, 500);
   }
 });
+
+function isLivePaidSubscription(
+  row: {
+    status?: string | null;
+    current_period_end?: string | null;
+  } | null,
+): boolean {
+  if (!row) return false;
+  // Schema stores active (no trialing column); treat both as live entitlement.
+  if (row.status !== "active" && row.status !== "trialing") return false;
+  if (!row.current_period_end) return true;
+  const end = Date.parse(row.current_period_end);
+  return !Number.isFinite(end) || end >= Date.now();
+}
 
 function json(payload: unknown, status = 200) {
   return new Response(JSON.stringify(payload), {

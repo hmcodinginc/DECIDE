@@ -66,5 +66,5 @@ export function getPlan(id: PlanId): Plan {
   return plan;
 }
 
-export const GUEST_ANALYSIS_LIMIT = 2;
+export const GUEST_ANALYSIS_LIMIT = getPlan("free").decisionsPerPeriod ?? 5;
 export const ENGINE_VERSION = "decide-engine/v1.1";

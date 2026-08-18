@@ -54,31 +54,33 @@ Deno.serve(async (req) => {
 
   if (razorpaySubId) {
     const status = mapStatus(payload.event);
-    const plan = notes.plan === "premium" ? "premium" : notes.plan === "pro" ? "pro" : undefined;
-    const periodStart = subscription?.current_start
-      ? new Date(Number(subscription.current_start) * 1000).toISOString()
-      : new Date().toISOString();
-    const periodEnd = subscription?.current_end
-      ? new Date(Number(subscription.current_end) * 1000).toISOString()
-      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    if (status) {
+      const plan = notes.plan === "premium" ? "premium" : notes.plan === "pro" ? "pro" : undefined;
+      const periodStart = subscription?.current_start
+        ? new Date(Number(subscription.current_start) * 1000).toISOString()
+        : new Date().toISOString();
+      const periodEnd = subscription?.current_end
+        ? new Date(Number(subscription.current_end) * 1000).toISOString()
+        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
-    const { data: existing } = await admin
-      .from("subscriptions")
-      .select("*")
-      .eq("razorpay_subscription_id", razorpaySubId)
-      .maybeSingle();
+      const { data: existing } = await admin
+        .from("subscriptions")
+        .select("*")
+        .eq("razorpay_subscription_id", razorpaySubId)
+        .maybeSingle();
 
-    const userId = existing?.user_id ?? notes.user_id;
-    if (userId) {
-      await admin.from("subscriptions").upsert({
-        user_id: userId,
-        plan: plan ?? existing?.plan ?? "pro",
-        status,
-        razorpay_subscription_id: razorpaySubId,
-        current_period_start: periodStart,
-        current_period_end: periodEnd,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "user_id" });
+      const userId = existing?.user_id ?? notes.user_id;
+      if (userId) {
+        await admin.from("subscriptions").upsert({
+          user_id: userId,
+          plan: plan ?? existing?.plan ?? "pro",
+          status,
+          razorpay_subscription_id: razorpaySubId,
+          current_period_start: periodStart,
+          current_period_end: periodEnd,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "user_id" });
+      }
     }
   }
 
@@ -99,14 +101,24 @@ Deno.serve(async (req) => {
   });
 });
 
-function mapStatus(event: string) {
-  if (event.includes("cancelled") || event.includes("halted")) return "cancelled";
-  if (event.includes("failed")) return "past_due";
-  if (event.includes("completed") || event.includes("expired")) return "expired";
-  if (event.includes("activated") || event.includes("charged") || event.includes("authenticated")) {
-    return "active";
+function mapStatus(event: string): "active" | "cancelled" | "expired" | "past_due" | null {
+  switch (event) {
+    case "subscription.authenticated":
+    case "subscription.activated":
+    case "subscription.charged":
+    case "subscription.resumed":
+      return "active";
+    case "subscription.cancelled":
+    case "subscription.halted":
+      return "cancelled";
+    case "subscription.completed":
+      return "expired";
+    case "subscription.paused":
+    case "payment.failed":
+      return "past_due";
+    default:
+      return null;
   }
-  return "active";
 }
 
 async function verifySignature(body: string, signature: string, secret: string) {
