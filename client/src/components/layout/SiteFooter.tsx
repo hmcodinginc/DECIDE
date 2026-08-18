@@ -13,7 +13,7 @@ function SiteFooter() {
             Stop comparing. Get a decision.
           </p>
         </div>
-        <div className="flex gap-6 text-sm text-muted-foreground">
+        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
           <Link to={ROUTES.pricing} className="hover:text-foreground">
             Pricing
           </Link>

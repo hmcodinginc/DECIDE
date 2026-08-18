@@ -27,7 +27,7 @@ function PricingPage() {
     <Container className="pt-28 pb-24">
       <div className="mx-auto mb-12 max-w-2xl text-center">
         <p className="text-xs tracking-[0.22em] text-gold uppercase">Pricing</p>
-        <h1 className="font-display mt-3 text-4xl sm:text-6xl">
+        <h1 className="font-display mt-3 text-4xl text-balance sm:text-6xl">
           5 free lifetime decisions.
         </h1>
         <p className="mt-4 text-muted-foreground">

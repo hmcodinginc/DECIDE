@@ -68,6 +68,7 @@
 
   html {
     scroll-behavior: smooth;
+    overflow-x: clip;
   }
 
   body {
@@ -76,6 +77,8 @@
       radial-gradient(1200px 600px at 50% -10%, oklch(0.45 0.08 82 / 0.16), transparent 60%),
       radial-gradient(800px 400px at 100% 20%, oklch(0.4 0.06 260 / 0.12), transparent 55%);
     min-height: 100vh;
+    overflow-x: clip;
+    overflow-wrap: break-word;
   }
 
   ::selection {

@@ -44,7 +44,7 @@ function HistoryPage() {
 
   return (
     <Container className="max-w-3xl pt-28 pb-24">
-      <h1 className="font-display text-4xl">My Decisions</h1>
+      <h1 className="font-display text-3xl sm:text-4xl">My Decisions</h1>
       <p className="mt-3 text-muted-foreground">Reopen anything DECIDE already settled.</p>
       {warning ? (
         <p className="mt-6 rounded-2xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-muted-foreground">
@@ -75,7 +75,7 @@ function HistoryPage() {
                   to={ROUTES.decision(item.id)}
                   className="block rounded-3xl border border-white/8 p-5 transition-colors hover:border-white/16"
                 >
-                  <p className="font-medium">{item.question}</p>
+                  <p className="font-medium break-words">{item.question}</p>
                   <p className="mt-2 text-sm text-muted-foreground">
                     {winner ? `Recommended: ${winner.name}` : "No recommendation yet"}
                     {" · "}

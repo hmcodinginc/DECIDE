@@ -20,7 +20,7 @@ function PricingCards({ onSelect, currentPlan }: PricingCardsProps) {
           <div
             key={plan.id}
             className={cn(
-              "flex flex-col rounded-3xl border p-7",
+              "flex flex-col rounded-3xl border p-5 sm:p-7",
               plan.featured
                 ? "border-gold/35 bg-gold-soft shadow-[0_0_80px_-30px_oklch(0.86_0.09_82)]"
                 : "border-white/8 bg-white/3",

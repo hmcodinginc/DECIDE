@@ -93,7 +93,7 @@ function BillingPage() {
         <UpgradePanel onSelect={(plan) => void checkout(plan)} />
       ) : (
         <>
-          <h1 className="font-display text-4xl">Billing</h1>
+          <h1 className="font-display text-3xl sm:text-4xl">Billing</h1>
           <p className="mt-3 max-w-xl text-muted-foreground">
             Plans are billed in Indian Rupees. Payment is confirmed on the
             server — this page never trusts a frontend success event alone.

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Container } from "@/components/common/Container";
+import { PasswordField } from "@/components/common/PasswordField";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +10,7 @@ import { authService } from "@/services/auth/auth-service";
 function ResetPasswordPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,6 +37,10 @@ function ResetPasswordPage() {
       setError(parsed.error.issues[0]?.message ?? "Use a stronger password.");
       return;
     }
+    if (password !== confirmPassword) {
+      setError("Passwords don't match. Retype to confirm.");
+      return;
+    }
     try {
       await authService.updatePassword(password);
       setNotice("Password updated. You can close this page.");
@@ -47,7 +53,7 @@ function ResetPasswordPage() {
   return (
     <Container className="max-w-md space-y-10 pt-32 pb-24">
       <div>
-        <h1 className="font-display text-4xl">Reset password</h1>
+        <h1 className="font-display text-3xl text-balance sm:text-4xl">Reset password</h1>
         <p className="mt-3 text-muted-foreground">
           Request a link, then set a new password when you return.
         </p>
@@ -68,12 +74,22 @@ function ResetPasswordPage() {
       <form onSubmit={(event) => void update(event)} className="space-y-4">
         <div>
           <Label htmlFor="password">New password</Label>
-          <Input
+          <PasswordField
             id="password"
             className="mt-2"
-            type="password"
+            autoComplete="new-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
+          />
+        </div>
+        <div>
+          <Label htmlFor="confirm-password">Confirm password</Label>
+          <PasswordField
+            id="confirm-password"
+            className="mt-2"
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
           />
         </div>
         <Button type="submit" variant="outline">

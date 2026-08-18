@@ -26,7 +26,7 @@ function WhySection() {
       <div className="grid gap-4 sm:grid-cols-2">
         {PILLARS.map((item, index) => (
           <Reveal key={item.title} delay={index * 0.05}>
-            <div className="h-full rounded-3xl border border-white/8 p-7">
+            <div className="h-full rounded-3xl border border-white/8 p-5 sm:p-7">
               <h3 className="font-display text-2xl">{item.title}</h3>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                 {item.body}

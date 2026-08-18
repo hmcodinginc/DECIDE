@@ -11,7 +11,7 @@ interface BrandMarkProps {
 function BrandMark({ className, size = "md", to = ROUTES.home }: BrandMarkProps) {
   const sizes = {
     sm: "text-lg",
-    md: "text-xl",
+    md: "text-lg sm:text-xl",
     lg: "text-3xl",
   };
 

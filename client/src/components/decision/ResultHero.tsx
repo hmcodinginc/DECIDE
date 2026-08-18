@@ -15,7 +15,7 @@ function ResultHero({ decision }: ResultHeroProps) {
     return (
       <div>
         <p className="text-xs tracking-[0.22em] text-gold uppercase">DECIDE</p>
-        <h1 className="font-display mt-3 text-3xl sm:text-5xl">
+        <h1 className="font-display mt-3 text-3xl text-balance sm:text-5xl">
           I don&apos;t have enough information to make a reliable recommendation yet.
         </h1>
         <p className="mt-4 text-muted-foreground">
@@ -37,7 +37,7 @@ function ResultHero({ decision }: ResultHeroProps) {
       <p className="text-xs tracking-[0.22em] text-gold uppercase">
         Based on the information you provided, DECIDE recommends
       </p>
-      <h1 className="font-display mt-4 text-4xl text-balance sm:text-6xl">
+      <h1 className="font-display mt-4 text-4xl text-balance break-words sm:text-6xl">
         {winner.name}
       </h1>
       <p className="mt-4 text-lg text-muted-foreground">

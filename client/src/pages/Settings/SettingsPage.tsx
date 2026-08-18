@@ -10,15 +10,23 @@ function SettingsPage() {
   const navigate = useNavigate();
   return (
     <Container className="max-w-lg pt-28 pb-24">
-      <h1 className="font-display text-4xl">Settings</h1>
+      <h1 className="font-display text-3xl sm:text-4xl">Settings</h1>
       <p className="mt-3 text-muted-foreground">
         The account you use to save decisions.
       </p>
-      <div className="mt-8 rounded-3xl border border-white/8 p-6">
-        <p className="text-xs tracking-[0.18em] text-muted-foreground uppercase">
-          Email
-        </p>
-        <p className="mt-2">{user?.email ?? "—"}</p>
+      <div className="mt-8 space-y-4 rounded-3xl border border-white/8 p-6">
+        <div>
+          <p className="text-xs tracking-[0.18em] text-muted-foreground uppercase">
+            Name
+          </p>
+          <p className="mt-2 text-lg">{user?.displayName ?? "—"}</p>
+        </div>
+        <div>
+          <p className="text-xs tracking-[0.18em] text-muted-foreground uppercase">
+            Email
+          </p>
+          <p className="mt-2">{user?.email ?? "—"}</p>
+        </div>
       </div>
       <Button
         className="mt-8"

@@ -6,11 +6,20 @@ import type { Session, User } from "@supabase/supabase-js";
 
 export function toAuthUser(user: User | null): AuthUser | null {
   if (!user) return null;
-  const metadata = user.user_metadata as { full_name?: string; name?: string };
+  const metadata = user.user_metadata as {
+    full_name?: string;
+    name?: string;
+    first_name?: string;
+    last_name?: string;
+  };
+  const combined =
+    metadata.first_name && metadata.last_name
+      ? `${metadata.first_name} ${metadata.last_name}`.replace(/\s+/g, " ").trim()
+      : null;
   return {
     id: user.id,
     email: user.email ?? null,
-    displayName: metadata.full_name ?? metadata.name ?? null,
+    displayName: metadata.full_name ?? metadata.name ?? combined ?? null,
   };
 }
 
@@ -37,12 +46,25 @@ export const authService = {
     if (error) throw error;
   },
 
-  async signUp(email: string, password: string) {
+  async signUp(
+    email: string,
+    password: string,
+    names: { firstName: string; lastName: string },
+  ) {
     if (!supabase) throw new Error("Authentication is not connected yet.");
+    const fullName = `${names.firstName} ${names.lastName}`.replace(/\s+/g, " ").trim();
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${SITE_URL}${ROUTES.authCallback}` },
+      options: {
+        emailRedirectTo: `${SITE_URL}${ROUTES.authCallback}`,
+        data: {
+          first_name: names.firstName,
+          last_name: names.lastName,
+          full_name: fullName,
+          name: fullName,
+        },
+      },
     });
     if (error) throw error;
     return { session: data.session };

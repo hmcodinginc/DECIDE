@@ -82,7 +82,7 @@ function ExamplesSection() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.35 }}
-            className="glass mx-auto mt-10 max-w-xl rounded-3xl p-8 text-center"
+            className="glass mx-auto mt-10 max-w-xl rounded-3xl p-6 text-center sm:p-8"
           >
             <p className="text-sm text-muted-foreground">{current.question}</p>
             <p className="mt-4 text-xs tracking-[0.22em] text-gold uppercase">

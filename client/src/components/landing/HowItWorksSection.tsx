@@ -37,7 +37,7 @@ function HowItWorksSection() {
       title="Five steps. Then you're done."
       description="DECIDE should not take 30 minutes. You already spent that on research."
     >
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         {STEPS.map((step, index) => (
           <Reveal key={step.n} delay={index * 0.06}>
             <div className="h-full rounded-3xl border border-white/8 bg-white/3 p-5">

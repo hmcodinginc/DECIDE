@@ -17,8 +17,8 @@ function ComparisonCards({ result }: { result: DecisionResult }) {
                 recommended ? "border-gold/35 bg-gold-soft" : "border-white/8",
               )}
             >
-              <div className="flex items-start justify-between gap-3">
-                <h3 className="font-medium">{score.name}</h3>
+              <div className="flex min-w-0 items-start justify-between gap-3">
+                <h3 className="min-w-0 font-medium break-words">{score.name}</h3>
                 <p className="text-sm text-muted-foreground">
                   {score.total.toFixed(1)}
                 </p>

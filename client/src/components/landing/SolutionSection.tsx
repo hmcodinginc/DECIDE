@@ -14,7 +14,7 @@ function SolutionSection() {
       <Reveal>
         <div className="flex flex-col items-stretch justify-center gap-3 md:flex-row md:items-center">
           {STEPS.map((step, index) => (
-            <div key={step} className="flex items-center gap-3">
+            <div key={step} className="flex w-full items-center gap-3 md:w-auto">
               <div
                 className={
                   step === "DECIDE"

@@ -30,8 +30,8 @@ function SiteHeader() {
           : "bg-transparent",
       )}
     >
-      <Container className="flex h-16 items-center justify-between sm:h-20">
-        <BrandMark />
+      <Container className="flex h-16 min-w-0 items-center justify-between gap-3 sm:h-20">
+        <BrandMark className="shrink-0" />
         <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
           <a href={isLanding ? "#how" : "/#how"} className="hover:text-foreground">
             How it works
@@ -45,12 +45,14 @@ function SiteHeader() {
             </Link>
           ) : null}
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  {user.displayName ?? user.email ?? "Account"}
+                <Button variant="ghost" size="sm" className="max-w-[9.5rem] min-w-0 px-2 sm:max-w-[14rem] sm:px-4">
+                  <span className="truncate">
+                    {user.displayName ?? user.email ?? "Account"}
+                  </span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -73,12 +75,15 @@ function SiteHeader() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button asChild variant="ghost" size="sm">
+            <Button asChild variant="ghost" size="sm" className="shrink-0 px-2 sm:px-4">
               <Link to={ROUTES.login}>Log in</Link>
             </Button>
           )}
-          <Button asChild size="sm">
-            <Link to={ROUTES.newDecision}>Make a Decision</Link>
+          <Button asChild size="sm" className="shrink-0 px-3 sm:px-4">
+            <Link to={ROUTES.newDecision}>
+              <span className="sm:hidden">Decide</span>
+              <span className="hidden sm:inline">Make a Decision</span>
+            </Link>
           </Button>
         </div>
       </Container>

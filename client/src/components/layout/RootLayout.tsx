@@ -7,7 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 function RootLayout() {
   return (
     <TooltipProvider>
-      <div className="flex min-h-svh flex-col">
+      <div className="flex min-h-svh min-w-0 flex-col overflow-x-clip">
         <SiteHeader />
         <main className="flex-1">
           <Outlet />
