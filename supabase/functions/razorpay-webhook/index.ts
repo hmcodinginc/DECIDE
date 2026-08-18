@@ -49,25 +49,42 @@ Deno.serve(async (req) => {
     user_id?: string;
     plan?: string;
   };
-  const razorpaySubId = (subscription?.id as string | undefined) ??
-    (payment?.subscription_id as string | undefined);
+  const razorpaySubId = asNonEmptyString(subscription?.id) ??
+    asNonEmptyString(payment?.subscription_id);
+  const razorpayPlanId = asNonEmptyString(subscription?.plan_id);
+  const allowedPlanIds = decideRazorpayPlanIds();
+
+  const { data: existing } = razorpaySubId
+    ? await admin
+      .from("subscriptions")
+      .select("*")
+      .eq("razorpay_subscription_id", razorpaySubId)
+      .maybeSingle()
+    : { data: null };
+
+  // Fail closed: only DECIDE plan IDs (env) or an already-stored DECIDE subscription.
+  const isDecideEvent = allowedPlanIds.length > 0 && (
+    Boolean(razorpayPlanId && allowedPlanIds.includes(razorpayPlanId)) ||
+    Boolean(existing)
+  );
+
+  if (!isDecideEvent) {
+    return new Response(JSON.stringify({ ok: true, ignored: true }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
   if (razorpaySubId) {
     const status = mapStatus(payload.event);
     if (status) {
-      const plan = notes.plan === "premium" ? "premium" : notes.plan === "pro" ? "pro" : undefined;
+      const plan = planFromRazorpayId(razorpayPlanId) ??
+        (notes.plan === "premium" ? "premium" : notes.plan === "pro" ? "pro" : undefined);
       const periodStart = subscription?.current_start
         ? new Date(Number(subscription.current_start) * 1000).toISOString()
         : new Date().toISOString();
       const periodEnd = subscription?.current_end
         ? new Date(Number(subscription.current_end) * 1000).toISOString()
         : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-
-      const { data: existing } = await admin
-        .from("subscriptions")
-        .select("*")
-        .eq("razorpay_subscription_id", razorpaySubId)
-        .maybeSingle();
 
       const userId = existing?.user_id ?? notes.user_id;
       if (userId) {
@@ -100,6 +117,25 @@ Deno.serve(async (req) => {
     headers: { "Content-Type": "application/json" },
   });
 });
+
+function asNonEmptyString(value: unknown): string | undefined {
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function decideRazorpayPlanIds(): string[] {
+  return [
+    Deno.env.get("RAZORPAY_PLAN_PRO") ?? "",
+    Deno.env.get("RAZORPAY_PLAN_PREMIUM") ?? "",
+  ].filter((id) => id.length > 0);
+}
+
+function planFromRazorpayId(planId: string | undefined): "pro" | "premium" | undefined {
+  const pro = Deno.env.get("RAZORPAY_PLAN_PRO") ?? "";
+  const premium = Deno.env.get("RAZORPAY_PLAN_PREMIUM") ?? "";
+  if (planId && pro && planId === pro) return "pro";
+  if (planId && premium && planId === premium) return "premium";
+  return undefined;
+}
 
 function mapStatus(event: string): "active" | "cancelled" | "expired" | "past_due" | null {
   switch (event) {
