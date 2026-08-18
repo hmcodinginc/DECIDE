@@ -24,10 +24,4 @@ export const constraintsSchema = z.object({
   dealBreakers: z.array(z.string().trim().min(1).max(80)).max(8),
 });
 
-export const emailSchema = z.email("Enter a valid email.");
-
-export const passwordSchema = z
-  .string()
-  .min(8, "Use at least 8 characters.");
-
 export type OptionInput = z.infer<typeof optionInputSchema>;

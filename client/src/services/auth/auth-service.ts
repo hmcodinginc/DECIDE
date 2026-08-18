@@ -1,4 +1,4 @@
-import { SITE_URL } from "@/config/brand";
+import { authRedirectUrl } from "@/config/brand";
 import { ROUTES } from "@/config/routes";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase/client";
 import type { AuthUser } from "@/types/auth";
@@ -57,7 +57,7 @@ export const authService = {
       email,
       password,
       options: {
-        emailRedirectTo: `${SITE_URL}${ROUTES.authCallback}`,
+        emailRedirectTo: authRedirectUrl(ROUTES.authCallback),
         data: {
           first_name: names.firstName,
           last_name: names.lastName,
@@ -74,7 +74,7 @@ export const authService = {
     if (!supabase) throw new Error("Authentication is not connected yet.");
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${SITE_URL}${ROUTES.authCallback}` },
+      options: { redirectTo: authRedirectUrl(ROUTES.authCallback) },
     });
     if (error) throw error;
   },
@@ -82,7 +82,7 @@ export const authService = {
   async resetPassword(email: string) {
     if (!supabase) throw new Error("Authentication is not connected yet.");
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${SITE_URL}${ROUTES.resetPassword}`,
+      redirectTo: authRedirectUrl(ROUTES.resetPassword),
     });
     if (error) throw error;
   },

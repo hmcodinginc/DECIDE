@@ -13,9 +13,10 @@ export function toUserMessage(error: unknown, fallback: string): string {
   if (
     lower.includes("provider is not enabled") ||
     lower.includes("unsupported provider") ||
+    lower.includes("validation_failed") ||
     lower.includes("validation failed")
   ) {
-    return "Google sign-in isn't configured yet. Use email instead.";
+    return "Google sign-in isn't configured yet. Please use email and password.";
   }
   if (lower.includes("not connected")) {
     return "Authentication isn't connected yet. Add your Supabase URL and anon key locally.";
@@ -58,20 +59,47 @@ export function toUserMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
+function unwrapJsonMessage(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith("{")) return text;
+  try {
+    const parsed = JSON.parse(trimmed) as {
+      msg?: unknown;
+      message?: unknown;
+      error_description?: unknown;
+      error?: unknown;
+    };
+    for (const value of [parsed.msg, parsed.message, parsed.error_description, parsed.error]) {
+      if (typeof value === "string" && value.trim()) return value;
+    }
+  } catch {
+    return text;
+  }
+  return text;
+}
+
 function errorText(error: unknown): string {
-  if (typeof error === "string") return error;
-  if (error instanceof Error) return error.message;
-  if (typeof error === "object" && error && "message" in error) {
-    const message = (error as { message: unknown }).message;
-    if (typeof message === "string") return message;
+  if (typeof error === "string") return unwrapJsonMessage(error);
+  if (error instanceof Error) return unwrapJsonMessage(error.message);
+  if (typeof error === "object" && error) {
+    for (const key of ["msg", "message", "error_description", "error"] as const) {
+      if (key in error) {
+        const value = (error as Record<string, unknown>)[key];
+        if (typeof value === "string") return unwrapJsonMessage(value);
+      }
+    }
   }
   return "";
 }
 
 function errorCode(error: unknown): string {
-  if (typeof error === "object" && error && "code" in error) {
-    const code = (error as { code: unknown }).code;
-    if (typeof code === "string" || typeof code === "number") return String(code);
+  if (typeof error === "object" && error) {
+    for (const key of ["code", "error_code"] as const) {
+      if (key in error) {
+        const code = (error as Record<string, unknown>)[key];
+        if (typeof code === "string" || typeof code === "number") return String(code);
+      }
+    }
   }
   return "";
 }

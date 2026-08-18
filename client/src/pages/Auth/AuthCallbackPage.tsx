@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Container } from "@/components/common/Container";
 import { ROUTES } from "@/config/routes";
+import { toUserMessage } from "@/lib/errors";
 import { authService } from "@/services/auth/auth-service";
 
 function AuthCallbackPage() {
@@ -13,7 +14,12 @@ function AuthCallbackPage() {
     const params = new URLSearchParams(window.location.search);
     const errorDescription = params.get("error_description") ?? params.get("error");
     if (errorDescription) {
-      setMessage("Couldn't complete sign-in. Try email instead.");
+      setMessage(
+        toUserMessage(
+          decodeURIComponent(errorDescription.replace(/\+/g, " ")),
+          "Couldn't complete sign-in. Try email instead.",
+        ),
+      );
       const timer = window.setTimeout(() => {
         void navigate(ROUTES.login, { replace: true });
       }, 1600);

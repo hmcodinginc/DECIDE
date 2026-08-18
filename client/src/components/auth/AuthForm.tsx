@@ -6,8 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ROUTES } from "@/config/routes";
 import { toUserMessage } from "@/lib/errors";
-import { firstNameSchema, lastNameSchema, toFullName } from "@/lib/validation/auth";
-import { emailSchema, passwordSchema } from "@/lib/validation/decision";
+import { firstNameSchema, lastNameSchema, toFullName, emailSchema, passwordSchema, signupPasswordSchema } from "@/lib/validation/auth";
 import { authService } from "@/services/auth/auth-service";
 
 interface AuthFormProps {
@@ -30,7 +29,10 @@ function AuthForm({ mode }: AuthFormProps) {
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     const emailResult = emailSchema.safeParse(email);
-    const passwordResult = passwordSchema.safeParse(password);
+    const passwordResult =
+      mode === "signup"
+        ? signupPasswordSchema.safeParse(password)
+        : passwordSchema.safeParse(password);
     if (mode === "signup") {
       const firstResult = firstNameSchema.safeParse(firstName);
       const lastResult = lastNameSchema.safeParse(lastName);
@@ -44,7 +46,7 @@ function AuthForm({ mode }: AuthFormProps) {
       }
     }
     if (!emailResult.success) {
-      setError(emailResult.error.issues[0]?.message ?? "Check your email.");
+      setError(emailResult.error.issues[0]?.message ?? "Enter a valid email address.");
       return;
     }
     if (!passwordResult.success) {
@@ -52,7 +54,7 @@ function AuthForm({ mode }: AuthFormProps) {
       return;
     }
     if (mode === "signup" && password !== confirmPassword) {
-      setError("Passwords don't match. Retype to confirm.");
+      setError("Passwords do not match.");
       return;
     }
     if (!authService.configured) {
@@ -65,10 +67,10 @@ function AuthForm({ mode }: AuthFormProps) {
     setError(null);
     try {
       if (mode === "login") {
-        await authService.signInWithPassword(email, password);
+        await authService.signInWithPassword(emailResult.data, password);
         void navigate(next);
       } else {
-        const { session } = await authService.signUp(email, password, {
+        const { session } = await authService.signUp(emailResult.data, password, {
           firstName: firstName.trim(),
           lastName: lastName.trim(),
         });
@@ -83,6 +85,28 @@ function AuthForm({ mode }: AuthFormProps) {
     } catch (caught) {
       setError(toUserMessage(caught, "Couldn't complete that. Try again."));
     } finally {
+      setBusy(false);
+    }
+  };
+
+  const startGoogle = async () => {
+    if (!authService.configured) {
+      setError(
+        "Authentication isn't connected yet. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to client/.env.local.",
+      );
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await authService.signInWithGoogle();
+    } catch (caught) {
+      setError(
+        toUserMessage(
+          caught,
+          "Google sign-in isn't configured yet. Please use email and password.",
+        ),
+      );
       setBusy(false);
     }
   };
@@ -133,6 +157,11 @@ function AuthForm({ mode }: AuthFormProps) {
           value={password}
           onChange={(event) => setPassword(event.target.value)}
         />
+        {mode === "signup" ? (
+          <p className="mt-2 text-xs text-muted-foreground">
+            8+ characters, with uppercase, lowercase, a number, and a symbol.
+          </p>
+        ) : null}
       </div>
       {mode === "signup" ? (
         <div>
@@ -155,16 +184,8 @@ function AuthForm({ mode }: AuthFormProps) {
         className="w-full"
         type="button"
         variant="outline"
-        onClick={() =>
-          void authService.signInWithGoogle().catch((caught: Error) =>
-            setError(
-              toUserMessage(
-                caught,
-                "Google sign-in isn't configured yet. Use email instead.",
-              ),
-            ),
-          )
-        }
+        disabled={busy}
+        onClick={() => void startGoogle()}
       >
         Continue with Google
       </Button>

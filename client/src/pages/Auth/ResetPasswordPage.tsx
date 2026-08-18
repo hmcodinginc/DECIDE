@@ -4,8 +4,9 @@ import { PasswordField } from "@/components/common/PasswordField";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { emailSchema, passwordSchema } from "@/lib/validation/decision";
+import { emailSchema, signupPasswordSchema } from "@/lib/validation/auth";
 import { authService } from "@/services/auth/auth-service";
+import { toUserMessage } from "@/lib/errors";
 
 function ResetPasswordPage() {
   const [email, setEmail] = useState("");
@@ -18,27 +19,27 @@ function ResetPasswordPage() {
     event.preventDefault();
     const parsed = emailSchema.safeParse(email);
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? "Enter your email.");
+      setError(parsed.error.issues[0]?.message ?? "Enter a valid email address.");
       return;
     }
     try {
-      await authService.resetPassword(email);
+      await authService.resetPassword(parsed.data);
       setNotice("If that email exists, a reset link is on its way.");
       setError(null);
     } catch (caught) {
-      setError((caught as Error).message);
+      setError(toUserMessage(caught, "Couldn't send a reset link. Try again."));
     }
   };
 
   const update = async (event: FormEvent) => {
     event.preventDefault();
-    const parsed = passwordSchema.safeParse(password);
+    const parsed = signupPasswordSchema.safeParse(password);
     if (!parsed.success) {
       setError(parsed.error.issues[0]?.message ?? "Use a stronger password.");
       return;
     }
-    if (password !== confirmPassword) {
-      setError("Passwords don't match. Retype to confirm.");
+    if (!confirmPassword || password !== confirmPassword) {
+      setError("Passwords do not match.");
       return;
     }
     try {
@@ -46,7 +47,7 @@ function ResetPasswordPage() {
       setNotice("Password updated. You can close this page.");
       setError(null);
     } catch (caught) {
-      setError((caught as Error).message);
+      setError(toUserMessage(caught, "Couldn't update your password. Try again."));
     }
   };
 
