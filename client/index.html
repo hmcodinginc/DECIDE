@@ -28,6 +28,16 @@
     <meta name="twitter:image" content="https://decide.hmcoding.com/og.png" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/og.png" />
+    <script>
+      (function () {
+        var params = new URLSearchParams(window.location.search);
+        var path = window.location.pathname;
+        if (!params.has("code") && !params.has("token_hash")) return;
+        if (path === "/auth/callback" || path === "/reset-password") return;
+        var target = params.get("type") === "recovery" ? "/reset-password" : "/auth/callback";
+        window.location.replace(target + window.location.search + window.location.hash);
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

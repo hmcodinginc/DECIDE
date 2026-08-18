@@ -83,6 +83,10 @@ function AuthForm({ mode }: AuthFormProps) {
         }
       }
     } catch (caught) {
+      if (import.meta.env.DEV) {
+        const err = caught as { message?: string; code?: string; status?: number };
+        console.error("[decide] auth failed", err?.status ?? "", err?.code ?? "", err?.message ?? "");
+      }
       setError(toUserMessage(caught, "Couldn't complete that. Try again."));
     } finally {
       setBusy(false);

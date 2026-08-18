@@ -13,15 +13,16 @@ export const SITE_URL =
   (import.meta.env.DEV ? "http://localhost:5173" : "https://decide.hmcoding.com");
 
 /**
- * Auth emails/OAuth must return to the origin the user is on (local, preview, or production).
- * VITE_SITE_URL remains the build-time fallback when window is unavailable.
+ * Auth emails/OAuth must return to the origin the user is actually on.
+ * Do not fall back to VITE_SITE_URL here — that would send local signups
+ * to production if window were unavailable.
  */
 export function authRedirectOrigin(): string {
   if (typeof window !== "undefined" && window.location?.origin) {
     const origin = window.location.origin.replace(/\/$/, "");
     if (origin.startsWith("http://") || origin.startsWith("https://")) return origin;
   }
-  return SITE_URL;
+  throw new Error("Auth redirect origin is not available.");
 }
 
 export function authRedirectUrl(path: string): string {
