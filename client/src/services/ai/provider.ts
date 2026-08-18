@@ -24,6 +24,5 @@ export async function extractFromUrl(url: string): Promise<ExtractionResult> {
     title: null,
     text: null,
     attributes: {},
-    warning: "We couldn't read this page. Paste the details instead.",
   };
 }

@@ -10,6 +10,7 @@ interface RatingsStepProps {
   onChange: (ratings: OptionRating[]) => void;
   onBack: () => void;
   onContinue: () => void;
+  onSkipRatings: () => void;
 }
 
 function RatingsStep({
@@ -19,6 +20,7 @@ function RatingsStep({
   onChange,
   onBack,
   onContinue,
+  onSkipRatings,
 }: RatingsStepProps) {
   const active = criteria.filter((item) => item.weight > 0);
   const optionIds = options.map((item) => item.id);
@@ -87,6 +89,20 @@ function RatingsStep({
                 >
                   They&apos;re similar
                 </button>
+                <button
+                  type="button"
+                  className={cn(
+                    "rounded-full border px-4 py-2 text-sm",
+                    current === "unset"
+                      ? "border-gold/40 bg-gold-soft text-foreground"
+                      : "border-white/10 text-muted-foreground hover:text-foreground",
+                  )}
+                  onClick={() =>
+                    onChange(setRating(ratings, criterion.id, optionIds[0] ?? "", "unset", optionIds))
+                  }
+                >
+                  Skip
+                </button>
               </div>
             </div>
           );
@@ -96,7 +112,7 @@ function RatingsStep({
         <Button variant="ghost" onClick={onBack}>
           Back
         </Button>
-        <Button variant="outline" onClick={onContinue}>
+        <Button variant="outline" onClick={onSkipRatings}>
           Skip ratings
         </Button>
         <Button onClick={onContinue}>Get my decision</Button>

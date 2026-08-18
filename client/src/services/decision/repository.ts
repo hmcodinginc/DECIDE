@@ -127,10 +127,16 @@ export const decisionRepository = {
     }
   },
 
-  async save(record: DecisionRecord): Promise<DecisionSaveResult> {
+  async save(
+    record: DecisionRecord,
+    options?: { requireRemote?: boolean },
+  ): Promise<DecisionSaveResult> {
     const next = { ...record, updatedAt: nowIso() };
     localDecisionStore.save(next);
     if (!next.userId || !supabase || !isSupabaseConfigured) {
+      if (options?.requireRemote) {
+        throw new Error("We couldn't save this decision. Try again.");
+      }
       return { record: next };
     }
 
@@ -196,7 +202,8 @@ export const decisionRepository = {
       }
 
       return { record: next };
-    } catch {
+    } catch (caught) {
+      if (options?.requireRemote) throw caught;
       return {
         record: next,
         warning: "We couldn't save this decision. Try again.",

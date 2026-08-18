@@ -1,5 +1,4 @@
 import { GUEST_ANALYSIS_LIMIT, getPlan, type PlanId } from "@/config/plans";
-import { toUserMessage } from "@/lib/errors";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase/client";
 import { localDecisionStore } from "@/services/decision/local-store";
 import type { Entitlement } from "@/types/billing";
@@ -59,17 +58,16 @@ export async function getEntitlement(userId: string | null): Promise<Entitlement
 
 export async function consumeAnalysis(userId: string | null, decisionId: string) {
   if (!userId) {
-    localDecisionStore.incrementGuestAnalyses();
-    return getEntitlement(null);
+    localDecisionStore.consumeGuestAnalysis(decisionId);
+    return;
   }
-  if (!supabase || !isSupabaseConfigured) return LOCAL_DEV_OPEN;
+  if (!supabase || !isSupabaseConfigured) return;
   const { data, error } = await supabase.rpc("try_consume_decision", {
     p_decision_id: decisionId,
   });
-  if (error) {
-    throw new Error(
-      toUserMessage(error, "We couldn't complete this decision. Try again."),
-    );
+  if (error) throw error;
+  if (!data) {
+    throw new Error("We couldn't record this decision. Try again.");
   }
   const row = data as {
     allowed: boolean;
@@ -82,7 +80,6 @@ export async function consumeAnalysis(userId: string | null, decisionId: string)
       row.message ?? "You've used your free decisions.",
     );
   }
-  return getEntitlement(userId);
 }
 
 export function planCopy(plan: PlanId) {

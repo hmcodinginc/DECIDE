@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { optionInputSchema } from "@/lib/validation/decision";
 import { emptyOption } from "@/services/decision/engine";
-import { extractFromUrl } from "@/services/ai/provider";
 import type { DecisionOption } from "@/types/decision";
 
 interface OptionsStepProps {
@@ -18,7 +17,6 @@ interface OptionsStepProps {
 
 function OptionsStep({ options, onChange, onBack, onContinue }: OptionsStepProps) {
   const [error, setError] = useState<string | null>(null);
-  const [urlNote, setUrlNote] = useState<string | null>(null);
 
   const update = (id: string, patch: Partial<DecisionOption>) => {
     onChange(options.map((item) => (item.id === id ? { ...item, ...patch } : item)));
@@ -55,18 +53,15 @@ function OptionsStep({ options, onChange, onBack, onContinue }: OptionsStepProps
     onContinue();
   };
 
-  const readUrl = async (option: DecisionOption) => {
-    if (!option.url.trim()) return;
-    const result = await extractFromUrl(option.url);
-    setUrlNote(result.warning ?? null);
-  };
-
   return (
     <div>
       <p className="text-xs tracking-[0.22em] text-gold uppercase">Step 2</p>
       <h1 className="font-display mt-3 text-3xl sm:text-5xl">Add your options</h1>
       <p className="mt-3 max-w-xl text-muted-foreground">
         Names are enough. Price, a link, or a note makes the recommendation sharper.
+      </p>
+      <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+        Optional link. DECIDE doesn&apos;t load the page. Paste names, price, and notes yourself.
       </p>
       <div className="mt-8 space-y-4">
         {options.map((option, index) => (
@@ -120,14 +115,13 @@ function OptionsStep({ options, onChange, onBack, onContinue }: OptionsStepProps
                   placeholder="129990"
                 />
               </div>
-              <div>
+              <div className="min-w-0">
                 <Label htmlFor={`url-${option.id}`}>URL (optional)</Label>
                 <Input
                   id={`url-${option.id}`}
-                  className="mt-2"
+                  className="mt-2 min-w-0 overflow-x-auto"
                   value={option.url}
                   onChange={(event) => update(option.id, { url: event.target.value })}
-                  onBlur={() => void readUrl(option)}
                   placeholder="https://"
                 />
               </div>
@@ -145,7 +139,6 @@ function OptionsStep({ options, onChange, onBack, onContinue }: OptionsStepProps
           </div>
         ))}
       </div>
-      {urlNote ? <p className="mt-3 text-sm text-gold/80">{urlNote}</p> : null}
       {error ? <p className="mt-3 text-sm text-red-300">{error}</p> : null}
       <div className="mt-6 flex flex-wrap gap-3">
         <Button variant="outline" onClick={add}>

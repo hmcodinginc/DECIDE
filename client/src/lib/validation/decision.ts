@@ -3,7 +3,11 @@ import { z } from "zod";
 export const optionInputSchema = z.object({
   name: z.string().trim().min(1, "Give this option a name.").max(80),
   description: z.string().trim().max(800).default(""),
-  url: z.string().trim().max(500).default(""),
+  url: z
+    .string()
+    .trim()
+    .max(2048, "That link is too long. Paste a shorter URL or put extra details in notes.")
+    .default(""),
   notes: z.string().trim().max(1200).default(""),
   price: z.number().nonnegative().nullable().default(null),
 });

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { Container } from "@/components/common/Container";
@@ -11,6 +11,8 @@ import { ROUTES } from "@/config/routes";
 import { nowIso } from "@/lib/format";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntitlements } from "@/hooks/useEntitlements";
+import { toUserMessage } from "@/lib/errors";
+import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { track } from "@/lib/product-log";
 import { suggestCriteria } from "@/services/decision/criteria";
 import { analyzeDecision, createDraft, emptyOption } from "@/services/decision/engine";
@@ -36,6 +38,7 @@ function DecisionFlow() {
       options: [emptyOption(0), emptyOption(1)],
     };
   });
+  const finishing = useRef(false);
 
   useEffect(() => {
     void track("decision_started");
@@ -53,19 +56,34 @@ function DecisionFlow() {
 
   const go = (next: Step) => setStep(next);
 
-  const finish = async () => {
+  const finish = async (record: DecisionRecord = decision) => {
+    if (finishing.current || busy) return;
     if (entitlement && !entitlement.canAnalyze) {
       void navigate(`${ROUTES.billing}?reason=limit`);
       void track("free_limit_reached");
       return;
     }
+    finishing.current = true;
     setBusy(true);
     setError(null);
     try {
-      await consumeAnalysis(user?.id ?? null, decision.id);
-      const result = analyzeDecision(decision);
+      const prepared: DecisionRecord = {
+        ...record,
+        userId: user?.id ?? null,
+        status: "draft",
+        result: null,
+        updatedAt: nowIso(),
+      };
+      const persistRemote = Boolean(user?.id && isSupabaseConfigured);
+      const persisted = await decisionRepository.save(prepared, {
+        requireRemote: persistRemote,
+      });
+
+      await consumeAnalysis(user?.id ?? null, persisted.record.id);
+
+      const result = analyzeDecision(persisted.record);
       const complete: DecisionRecord = {
-        ...decision,
+        ...persisted.record,
         userId: user?.id ?? null,
         status: "complete",
         result,
@@ -77,6 +95,10 @@ function DecisionFlow() {
       void track("decision_completed");
       void navigate(ROUTES.decision(saved.record.id));
     } catch (caught) {
+      if (import.meta.env.DEV) {
+        const err = caught as { message?: string; code?: string };
+        console.error("[decide] finish failed", err?.code ?? "", err?.message ?? "");
+      }
       if (caught instanceof LimitReachedError) {
         void track("free_limit_reached");
         void navigate(`${ROUTES.billing}?reason=limit`);
@@ -88,8 +110,11 @@ function DecisionFlow() {
         void navigate(`${ROUTES.billing}?reason=limit`);
         return;
       }
-      setError("We couldn't complete this decision. Try again.");
+      setError(
+        toUserMessage(caught, "We couldn't complete this decision. Try again."),
+      );
     } finally {
+      finishing.current = false;
       setBusy(false);
     }
   };
@@ -102,6 +127,7 @@ function DecisionFlow() {
       onChange={(ratings) => patch({ ratings })}
       onBack={() => go("priorities")}
       onContinue={() => void finish()}
+      onSkipRatings={() => void finish({ ...decision, ratings: [] })}
     />
   );
 

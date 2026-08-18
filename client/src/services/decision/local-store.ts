@@ -2,6 +2,7 @@ import type { DecisionRecord } from "@/types/decision";
 
 const KEY = "decide:decisions";
 const GUEST_USAGE_KEY = "decide:guest-analyses";
+const GUEST_CONSUMED_KEY = "decide:guest-consumed-ids";
 
 function readAll(): DecisionRecord[] {
   try {
@@ -16,6 +17,17 @@ function readAll(): DecisionRecord[] {
 
 function writeAll(records: DecisionRecord[]) {
   localStorage.setItem(KEY, JSON.stringify(records));
+}
+
+function guestConsumedIds(): string[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(GUEST_CONSUMED_KEY) ?? "[]") as unknown;
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === "string")
+      : [];
+  } catch {
+    return [];
+  }
 }
 
 export const localDecisionStore = {
@@ -39,5 +51,11 @@ export const localDecisionStore = {
   },
   incrementGuestAnalyses() {
     localStorage.setItem(GUEST_USAGE_KEY, String(localDecisionStore.guestAnalyses() + 1));
+  },
+  consumeGuestAnalysis(decisionId: string) {
+    const ids = guestConsumedIds();
+    if (ids.includes(decisionId)) return;
+    localStorage.setItem(GUEST_CONSUMED_KEY, JSON.stringify([...ids, decisionId]));
+    localDecisionStore.incrementGuestAnalyses();
   },
 };

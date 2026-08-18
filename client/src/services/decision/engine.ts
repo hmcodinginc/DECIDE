@@ -57,7 +57,7 @@ function scoreFor(
   if (rating && rating.relative !== "unset") {
     return RELATIVE_SCORE[rating.relative];
   }
-  if (criterion.kind === "cost") {
+  if (criterion.key === "price") {
     const option = options.find((item) => item.id === optionId);
     if (option) {
       const auto = autoPriceScore(option, options);
@@ -65,6 +65,33 @@ function scoreFor(
     }
   }
   return 5;
+}
+
+function criterionHasUserRating(
+  decision: DecisionRecord,
+  criterionId: string,
+): boolean {
+  return decision.ratings.some(
+    (item) => item.criterionId === criterionId && item.relative !== "unset",
+  );
+}
+
+function criterionHasPriceEvidence(
+  decision: DecisionRecord,
+  criterion: DecisionCriterion,
+): boolean {
+  if (criterion.key !== "price") return false;
+  return decision.options.filter((item) => priceOf(item) !== null).length >= 2;
+}
+
+function criterionHasEvidence(
+  decision: DecisionRecord,
+  criterion: DecisionCriterion,
+): boolean {
+  return (
+    criterionHasUserRating(decision, criterion.id) ||
+    criterionHasPriceEvidence(decision, criterion)
+  );
 }
 
 function scoreOptions(decision: DecisionRecord): ScoredOption[] {
@@ -117,48 +144,64 @@ function pickWinner(scores: ScoredOption[]): ScoredOption | null {
 
 function confidenceOf(decision: DecisionRecord, scores: ScoredOption[]): Confidence {
   if (decision.options.length < 2) return "insufficient";
-  const rated = decision.ratings.filter((item) => item.relative !== "unset").length;
-  const needed = decision.options.length * decision.criteria.length;
-  const coverage = needed === 0 ? 0 : rated / needed;
+  const active = decision.criteria.filter((item) => item.weight > 0);
+  const evidenced = active.filter((item) => criterionHasEvidence(decision, item)).length;
+  const coverage = active.length === 0 ? 0 : evidenced / active.length;
   const pool = eligible(scores);
   if (pool.length < 2) return coverage > 0.4 ? "medium" : "low";
   const ranked = [...pool].sort((a, b) => b.total - a.total);
   const spread = (ranked[0]?.total ?? 0) - (ranked[1]?.total ?? 0);
-  if (coverage < 0.2 && spread < 0.6) return "insufficient";
+  if (coverage < 0.2) return spread >= 0.6 ? "low" : "insufficient";
   if (coverage >= 0.5 && spread >= 1.2) return "high";
-  if (coverage >= 0.25 || spread >= 0.7) return "medium";
+  if (coverage >= 0.25 && spread >= 0.7) return "medium";
+  if (coverage >= 0.25 || spread >= 0.7) return "low";
   return "low";
 }
 
-function whyFor(winner: ScoredOption, runnerUp: ScoredOption | null): string[] {
+function whyFor(
+  decision: DecisionRecord,
+  winner: ScoredOption,
+  runnerUp: ScoredOption | null,
+): string[] {
   const reasons: string[] = [];
-  const sorted = [...winner.breakdown].sort((a, b) => b.weighted - a.weighted);
+  const evidenced = winner.breakdown.filter((item) => {
+    const criterion = decision.criteria.find((row) => row.id === item.criterionId);
+    return criterion ? criterionHasEvidence(decision, criterion) : false;
+  });
+  const sorted = [...evidenced].sort((a, b) => b.weighted - a.weighted);
+
   for (const item of sorted.slice(0, 3)) {
-    if (item.raw >= 7) {
+    const other = runnerUp?.breakdown.find((row) => row.criterionId === item.criterionId);
+    const delta = item.raw - (other?.raw ?? item.raw);
+    if (delta >= 0.8) {
       reasons.push(`Strongest on ${item.label.toLowerCase()}`);
-    } else if (item.raw >= 5.5) {
-      reasons.push(`Solid match for ${item.label.toLowerCase()}`);
     }
   }
-  if (runnerUp) {
+
+  if (reasons.length > 0 && runnerUp) {
     const delta = round1(winner.total - runnerUp.total);
     if (delta >= 0.4) {
       reasons.push(`Better overall fit than ${runnerUp.name}`);
     }
   }
-  if (reasons.length === 0) {
-    reasons.push("Best overall match for the priorities you set");
-  }
+
   return [...new Set(reasons)].slice(0, 4);
 }
 
 function tradeoffFor(
+  decision: DecisionRecord,
   winner: ScoredOption,
   others: ScoredOption[],
 ): DecisionResult["tradeoff"] {
   const rival = others.find((item) => item.optionId !== winner.optionId);
   if (!rival) return null;
-  const weak = [...winner.breakdown]
+
+  const evidenced = winner.breakdown.filter((item) => {
+    const criterion = decision.criteria.find((row) => row.id === item.criterionId);
+    return criterion ? criterionHasEvidence(decision, criterion) : false;
+  });
+
+  const weak = evidenced
     .filter((item) => {
       const other = rival.breakdown.find((row) => row.criterionId === item.criterionId);
       return other ? other.raw - item.raw >= 1.2 : false;
@@ -168,27 +211,44 @@ function tradeoffFor(
       const otherB = rival.breakdown.find((row) => row.criterionId === b.criterionId);
       return (otherB?.raw ?? 0) - b.raw - ((otherA?.raw ?? 0) - a.raw);
     })[0];
-  const strong = [...winner.breakdown]
+  const strong = evidenced
     .filter((item) => {
       const other = rival.breakdown.find((row) => row.criterionId === item.criterionId);
-      return other ? item.raw - other.raw >= 0.8 : item.raw >= 7;
+      return other ? item.raw - other.raw >= 0.8 : false;
     })
     .sort((a, b) => b.raw - a.raw)[0];
 
-  if (!weak && !strong) return null;
-  return {
-    givingUp: weak
-      ? `${rival.name} is stronger on ${weak.label.toLowerCase()}`
-      : `${rival.name} may feel closer on a few details`,
-    gaining: strong
-      ? `you gain a better fit on ${strong.label.toLowerCase()}`
-      : `you gain a better overall match for what you said matters`,
-  };
+  if (weak || strong) {
+    return {
+      givingUp: weak
+        ? `${rival.name} is stronger on ${weak.label.toLowerCase()}`
+        : "the other criteria were not rated",
+      gaining: strong
+        ? `a better fit on ${strong.label.toLowerCase()}`
+        : `a better overall match for what you rated`,
+    };
+  }
+
+  const priceCriterion = decision.criteria.find((item) => item.key === "price");
+  if (priceCriterion && criterionHasPriceEvidence(decision, priceCriterion)) {
+    const winnerOption = decision.options.find((item) => item.id === winner.optionId);
+    const rivalOption = decision.options.find((item) => item.id === rival.optionId);
+    const winnerPrice = winnerOption ? priceOf(winnerOption) : null;
+    const rivalPrice = rivalOption ? priceOf(rivalOption) : null;
+    if (winnerPrice !== null && rivalPrice !== null && winnerPrice < rivalPrice) {
+      return {
+        givingUp: "a comparison on the criteria you didn't rate",
+        gaining: `a lower price on ${winner.name}`,
+      };
+    }
+  }
+
+  return null;
 }
 
 function whatIfFor(decision: DecisionRecord, currentWinnerId: string | null): WhatIf[] {
   return decision.criteria
-    .filter((item) => item.weight > 0)
+    .filter((item) => item.weight > 0 && criterionHasEvidence(decision, item))
     .map((criterion) => {
       const boosted: DecisionRecord = {
         ...decision,
@@ -242,8 +302,8 @@ export function analyzeDecision(decision: DecisionRecord): DecisionResult {
       return b.total - a.total;
     }),
     confidence,
-    why: winner ? whyFor(winner, runnerUp) : [],
-    tradeoff: winner ? tradeoffFor(winner, scores) : null,
+    why: winner ? whyFor(decision, winner, runnerUp) : [],
+    tradeoff: winner ? tradeoffFor(decision, winner, scores) : null,
     whatIf: whatIfFor(decision, winner?.optionId ?? null),
     missing: missingFor(decision, confidence),
     engineVersion: ENGINE_VERSION,

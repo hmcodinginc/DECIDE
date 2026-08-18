@@ -67,4 +67,4 @@ export function getPlan(id: PlanId): Plan {
 }
 
 export const GUEST_ANALYSIS_LIMIT = 2;
-export const ENGINE_VERSION = "decide-engine/v1";
+export const ENGINE_VERSION = "decide-engine/v1.1";
