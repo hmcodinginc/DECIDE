@@ -21,7 +21,7 @@ function PasswordField({
       <button
         type="button"
         disabled={disabled}
-        className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-gold/40 focus-visible:outline-none disabled:opacity-50"
+        className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-muted-foreground transition-colors duration-200 hover:text-gold focus-visible:ring-2 focus-visible:ring-gold/40 focus-visible:outline-none disabled:opacity-50"
         onClick={() => setVisible((current) => !current)}
         aria-label={visible ? "Hide password" : "Show password"}
         aria-pressed={visible}

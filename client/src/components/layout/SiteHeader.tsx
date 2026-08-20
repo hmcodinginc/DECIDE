@@ -31,16 +31,16 @@ function SiteHeader() {
       )}
     >
       <Container className="flex h-16 min-w-0 items-center justify-between gap-3 sm:h-20">
-        <BrandMark className="shrink-0" />
-        <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
-          <a href={isLanding ? "#how" : "/#how"} className="hover:text-foreground">
+        <BrandMark className="min-w-0 shrink" />
+        <nav className="hidden min-w-0 items-center gap-6 text-sm text-muted-foreground lg:flex xl:gap-8">
+          <a href={isLanding ? "#how" : "/#how"} className="link-hover">
             How it works
           </a>
-          <Link to={ROUTES.pricing} className="hover:text-foreground">
+          <Link to={ROUTES.pricing} className="link-hover">
             Pricing
           </Link>
           {user ? (
-            <Link to={ROUTES.history} className="hover:text-foreground">
+            <Link to={ROUTES.history} className="link-hover">
               My Decisions
             </Link>
           ) : null}
@@ -81,8 +81,8 @@ function SiteHeader() {
           )}
           <Button asChild size="sm" className="shrink-0 px-3 sm:px-4">
             <Link to={ROUTES.newDecision}>
-              <span className="sm:hidden">Decide</span>
-              <span className="hidden sm:inline">Make a Decision</span>
+              <span className="lg:hidden">Decide</span>
+              <span className="hidden lg:inline">Make a Decision</span>
             </Link>
           </Button>
         </div>

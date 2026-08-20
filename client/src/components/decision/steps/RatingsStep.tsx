@@ -62,7 +62,7 @@ function RatingsStep({
                       "rounded-full border px-4 py-2 text-sm",
                       current === option.id
                         ? "border-gold/40 bg-gold-soft text-foreground"
-                        : "border-white/10 text-muted-foreground hover:text-foreground",
+                        : "chip-hover border-white/10 text-muted-foreground",
                     )}
                     onClick={() =>
                       onChange(
@@ -79,7 +79,7 @@ function RatingsStep({
                     "rounded-full border px-4 py-2 text-sm",
                     current === "similar"
                       ? "border-gold/40 bg-gold-soft text-foreground"
-                      : "border-white/10 text-muted-foreground hover:text-foreground",
+                      : "chip-hover border-white/10 text-muted-foreground",
                   )}
                   onClick={() =>
                     onChange(
@@ -95,7 +95,7 @@ function RatingsStep({
                     "rounded-full border px-4 py-2 text-sm",
                     current === "unset"
                       ? "border-gold/40 bg-gold-soft text-foreground"
-                      : "border-white/10 text-muted-foreground hover:text-foreground",
+                      : "chip-hover border-white/10 text-muted-foreground",
                   )}
                   onClick={() =>
                     onChange(setRating(ratings, criterion.id, optionIds[0] ?? "", "unset", optionIds))

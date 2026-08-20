@@ -72,7 +72,7 @@ GitHub integration is already set to deploy from `main`. After this repo is on `
 2. **Authentication → URL configuration**
    - Site URL: `http://localhost:5173` while developing locally
    - Redirect URLs: `http://localhost:5173/auth/callback`, `http://localhost:5173/reset-password`, and later `https://decide.hmcoding.com/**`
-3. **Google** is optional. Enable it only after adding a free Google Cloud OAuth client. Until then, the Google button stays visible and tells the user to use email.
+3. Sign-in is **email and password** (Google OAuth needs a Google Cloud client, which is skipped on the ₹0 path).
 4. For local testing, **Confirm email** can be turned off so signup creates a session immediately (still free).
 
 Razorpay checkout is scaffolded in `supabase/functions/` and will be connected in a later step. Do not deploy those functions until then.

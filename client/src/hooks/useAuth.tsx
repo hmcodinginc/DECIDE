@@ -3,10 +3,12 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
-import { authService, toAuthUser } from "@/services/auth/auth-service";
+import { bindCheckoutToAuthUser } from "@/lib/checkout-session";
+import { authService } from "@/services/auth/auth-service";
 import type { AuthUser } from "@/types/auth";
 
 interface AuthContextValue {
@@ -20,21 +22,37 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const previousUserId = useRef<string | null>(null);
+
+  useEffect(() => {
+    bindCheckoutToAuthUser(previousUserId.current, user?.id ?? null);
+    previousUserId.current = user?.id ?? null;
+  }, [user?.id]);
 
   useEffect(() => {
     let active = true;
-    authService
-      .getSession()
-      .then((session) => {
-        if (active) setUser(toAuthUser(session?.user ?? null));
+    let ready = false;
+
+    const unsubscribe = authService.onAuthChange((next) => {
+      if (!active || !ready) return;
+      setUser(next);
+    });
+
+    void authService
+      .loadInitialAuth()
+      .then((next) => {
+        if (!active) return;
+        setUser(next);
+        ready = true;
+        setLoading(false);
       })
       .catch(() => {
-        if (active) setUser(null);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
+        if (!active) return;
+        setUser(null);
+        ready = true;
+        setLoading(false);
       });
-    const unsubscribe = authService.onAuthChange((next) => setUser(next));
+
     return () => {
       active = false;
       unsubscribe();

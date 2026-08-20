@@ -40,7 +40,7 @@ function DropdownMenuItem({
   return (
     <DropdownMenuPrimitive.Item
       className={cn(
-        "flex cursor-pointer items-center rounded-xl px-3 py-2 text-sm outline-none hover:bg-white/6 focus:bg-white/6",
+        "flex cursor-pointer items-center rounded-xl px-3 py-2 text-sm outline-none transition-colors duration-150 hover:bg-white/8 hover:text-foreground focus:bg-white/8",
         className,
       )}
       {...props}

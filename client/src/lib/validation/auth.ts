@@ -31,3 +31,13 @@ export const signupPasswordSchema = passwordSchema
 export function toFullName(firstName: string, lastName: string) {
   return `${firstName.trim()} ${lastName.trim()}`.replace(/\s+/g, " ").trim();
 }
+
+export function splitFullName(displayName: string | null | undefined) {
+  const parts = (displayName ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { firstName: "", lastName: "" };
+  if (parts.length === 1) return { firstName: parts[0] ?? "", lastName: "" };
+  return {
+    firstName: parts[0] ?? "",
+    lastName: parts.slice(1).join(" "),
+  };
+}

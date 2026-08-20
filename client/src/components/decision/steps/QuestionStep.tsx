@@ -45,7 +45,7 @@ function QuestionStep({ value, onChange, onContinue }: QuestionStepProps) {
           <button
             key={example}
             type="button"
-            className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+            className="chip-hover rounded-full border border-white/10 px-3 py-1.5 text-xs text-muted-foreground"
             onClick={() => onChange(example)}
           >
             {example}

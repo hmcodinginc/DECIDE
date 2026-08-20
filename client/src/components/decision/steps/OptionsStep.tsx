@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { optionInputSchema } from "@/lib/validation/decision";
 import { emptyOption } from "@/services/decision/engine";
+import { OptionUrlField } from "@/components/decision/OptionUrlField";
 import type { DecisionOption } from "@/types/decision";
 
 interface OptionsStepProps {
@@ -58,10 +59,8 @@ function OptionsStep({ options, onChange, onBack, onContinue }: OptionsStepProps
       <p className="text-xs tracking-[0.22em] text-gold uppercase">Step 2</p>
       <h1 className="font-display mt-3 text-3xl sm:text-5xl">Add your options</h1>
       <p className="mt-3 max-w-xl text-muted-foreground">
-        Names are enough. Price, a link, or a note makes the recommendation sharper.
-      </p>
-      <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-        Optional link. DECIDE doesn&apos;t load the page. Paste names, price, and notes yourself.
+        Names are enough. An optional link can fill name or price when the page
+        publishes them. If it doesn&apos;t, type the details yourself.
       </p>
       <div className="mt-8 space-y-4">
         {options.map((option, index) => (
@@ -73,7 +72,7 @@ function OptionsStep({ options, onChange, onBack, onContinue }: OptionsStepProps
               {options.length > 2 ? (
                 <button
                   type="button"
-                  className="text-muted-foreground hover:text-foreground"
+                  className="rounded-full p-1.5 text-muted-foreground transition-colors duration-200 hover:bg-white/8 hover:text-foreground"
                   onClick={() => onChange(options.filter((item) => item.id !== option.id))}
                 >
                   <Trash2 className="size-4" />
@@ -116,13 +115,9 @@ function OptionsStep({ options, onChange, onBack, onContinue }: OptionsStepProps
                 />
               </div>
               <div className="min-w-0">
-                <Label htmlFor={`url-${option.id}`}>URL (optional)</Label>
-                <Input
-                  id={`url-${option.id}`}
-                  className="mt-2 min-w-0 overflow-x-auto"
-                  value={option.url}
-                  onChange={(event) => update(option.id, { url: event.target.value })}
-                  placeholder="https://"
+                <OptionUrlField
+                  option={option}
+                  onPatch={(patch) => update(option.id, patch)}
                 />
               </div>
               <div className="sm:col-span-2">

@@ -4,6 +4,20 @@ import { isSupabaseConfigured, supabase } from "@/lib/supabase/client";
 import type { AuthUser } from "@/types/auth";
 import type { Session, User } from "@supabase/supabase-js";
 
+function jwtExpiry(token: string): number | null {
+  try {
+    const payloadPart = token.split(".")[1];
+    if (!payloadPart) return null;
+    const padded = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
+    const json = JSON.parse(
+      atob(padded + "=".repeat((4 - (padded.length % 4)) % 4)),
+    ) as { exp?: number };
+    return typeof json.exp === "number" ? json.exp : null;
+  } catch {
+    return null;
+  }
+}
+
 export function toAuthUser(user: User | null): AuthUser | null {
   if (!user) return null;
   const metadata = user.user_metadata as {
@@ -30,6 +44,75 @@ export const authService = {
     if (!supabase) return null;
     const { data } = await supabase.auth.getSession();
     return data.session;
+  },
+
+  /**
+   * Wait for persisted-session recovery, then validate/refresh the JWT.
+   * `getSession()` alone can return an expired local session.
+   */
+  async loadInitialAuth(): Promise<AuthUser | null> {
+    if (!supabase) return null;
+    const { data: sessionData } = await supabase.auth.getSession();
+    const sessionUser = sessionData.session?.user ?? null;
+    if (!sessionUser) return null;
+
+    const { data, error } = await supabase.auth.getUser();
+    if (!error && data.user) return toAuthUser(data.user);
+
+    const message = (error?.message ?? "").toLowerCase();
+    const isAuthError =
+      error?.status === 401 ||
+      message.includes("jwt") ||
+      message.includes("expired") ||
+      message.includes("invalid") ||
+      message.includes("session");
+    if (isAuthError) {
+      await supabase.auth.signOut().catch(() => undefined);
+      return null;
+    }
+    return toAuthUser(sessionUser);
+  },
+
+  /** Refresh if needed and return a JWT that Edge Functions will accept. */
+  async getValidAccessToken(): Promise<string | null> {
+    const prepared = await this.prepareCheckoutAuth();
+    return prepared?.accessToken ?? null;
+  },
+
+  async prepareCheckoutAuth(): Promise<{
+    accessToken: string;
+    userId: string;
+  } | null> {
+    if (!supabase) return null;
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    let session = sessionData.session;
+    if (!session?.access_token || !session.user) return null;
+
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData.user) return null;
+    if (userData.user.id !== session.user.id) return null;
+
+    let token = session.access_token;
+    const exp = jwtExpiry(token);
+    const now = Math.floor(Date.now() / 1000);
+    if (exp != null && exp <= now + 30) {
+      const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError || !refreshed.session?.access_token) return null;
+      const { data: again, error: againError } = await supabase.auth.getUser();
+      if (againError || !again.user || again.user.id !== refreshed.session.user.id) {
+        return null;
+      }
+      session = refreshed.session;
+      token = refreshed.session.access_token;
+    }
+
+    if (token.startsWith("sb_") || !token.includes(".")) return null;
+
+    return {
+      accessToken: token,
+      userId: userData.user.id,
+    };
   },
 
   onAuthChange(callback: (user: AuthUser | null) => void) {
@@ -68,15 +151,6 @@ export const authService = {
     });
     if (error) throw error;
     return { session: data.session };
-  },
-
-  async signInWithGoogle() {
-    if (!supabase) throw new Error("Authentication is not connected yet.");
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: authRedirectUrl(ROUTES.authCallback) },
-    });
-    if (error) throw error;
   },
 
   async resetPassword(email: string) {

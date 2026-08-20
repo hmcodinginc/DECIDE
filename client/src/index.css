@@ -97,6 +97,51 @@
   border: 1px solid oklch(0.92 0.02 90 / 0.1);
 }
 
+@utility link-hover {
+  transition: color 180ms ease;
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: var(--gold);
+    }
+  }
+}
+
+@utility chip-hover {
+  cursor: pointer;
+  transition:
+    color 200ms ease,
+    background-color 200ms ease,
+    border-color 200ms ease;
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: var(--foreground);
+      border-color: oklch(0.86 0.09 82 / 0.38);
+      background-color: oklch(0.86 0.09 82 / 0.1);
+    }
+  }
+}
+
+@utility surface-hover {
+  transition:
+    border-color 200ms ease,
+    background-color 200ms ease,
+    box-shadow 200ms ease,
+    transform 200ms ease;
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      border-color: oklch(0.86 0.09 82 / 0.32);
+      background-color: oklch(0.86 0.09 82 / 0.07);
+      box-shadow: 0 16px 40px -28px oklch(0.86 0.09 82 / 0.5);
+      transform: translateY(-1px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &:hover {
+      transform: none;
+    }
+  }
+}
+
 @utility grain {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
 }

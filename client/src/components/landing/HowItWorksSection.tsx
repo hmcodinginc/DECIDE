@@ -40,7 +40,7 @@ function HowItWorksSection() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         {STEPS.map((step, index) => (
           <Reveal key={step.n} delay={index * 0.06}>
-            <div className="h-full rounded-3xl border border-white/8 bg-white/3 p-5">
+            <div className="surface-hover h-full rounded-3xl border border-white/8 bg-white/3 p-5">
               <p className="font-display text-sm tracking-[0.2em] text-gold">
                 {step.n}
               </p>

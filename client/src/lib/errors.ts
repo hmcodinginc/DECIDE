@@ -1,3 +1,27 @@
+export class AuthRequiredError extends Error {
+  constructor(message = "Authentication required") {
+    super(message);
+    this.name = "AuthRequiredError";
+  }
+}
+
+export function isAuthenticationFailure(error: unknown): boolean {
+  if (error instanceof AuthRequiredError) return true;
+  const message = errorText(error);
+  const code = errorCode(error);
+  const lower = `${message} ${code}`.toLowerCase();
+  return (
+    lower.includes("authentication required") ||
+    lower.includes("authentication failed") ||
+    lower.includes("not authenticated") ||
+    lower.includes("unauthorized") ||
+    lower.includes("jwt expired") ||
+    lower.includes("invalid jwt") ||
+    code === "401" ||
+    code === "PGRST301"
+  );
+}
+
 export function toUserMessage(error: unknown, fallback: string): string {
   const message = errorText(error);
   const code = errorCode(error);
@@ -69,11 +93,8 @@ export function toUserMessage(error: unknown, fallback: string): string {
     return "The confirmation email couldn't be sent. Check Supabase Auth email settings.";
   }
   if (
-    lower.includes("not authenticated") ||
-    lower.includes("jwt expired") ||
-    lower.includes("invalid jwt") ||
-    (lower.includes("session") && lower.includes("expired")) ||
-    code === "PGRST301"
+    isAuthenticationFailure(error) ||
+    (lower.includes("session") && lower.includes("expired"))
   ) {
     return "You're not signed in. Log in and try again.";
   }

@@ -26,7 +26,7 @@ function ProblemSection() {
             {NOISE.map((item, index) => (
               <div
                 key={item}
-                className="rounded-2xl border border-white/8 bg-white/3 px-4 py-4 text-sm text-muted-foreground"
+                className="surface-hover rounded-2xl border border-white/8 bg-white/3 px-4 py-4 text-sm text-muted-foreground"
                 style={{
                   transform: `rotate(${index % 2 === 0 ? -0.6 : 0.8}deg)`,
                   opacity: 0.55 + (index % 3) * 0.12,

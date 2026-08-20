@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ROUTES } from "@/config/routes";
+import { authHref, consumeAuthNext, readSafeNext, rememberAuthNext } from "@/lib/auth-next";
 import { toUserMessage } from "@/lib/errors";
 import { firstNameSchema, lastNameSchema, toFullName, emailSchema, passwordSchema, signupPasswordSchema } from "@/lib/validation/auth";
 import { authService } from "@/services/auth/auth-service";
@@ -16,7 +17,7 @@ interface AuthFormProps {
 function AuthForm({ mode }: AuthFormProps) {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const next = params.get("next") || ROUTES.app;
+  const next = readSafeNext(params.get("next"));
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -65,17 +66,20 @@ function AuthForm({ mode }: AuthFormProps) {
     }
     setBusy(true);
     setError(null);
+    rememberAuthNext(next);
     try {
       if (mode === "login") {
         await authService.signInWithPassword(emailResult.data, password);
-        void navigate(next);
+        consumeAuthNext();
+        void navigate(next, { replace: true });
       } else {
         const { session } = await authService.signUp(emailResult.data, password, {
           firstName: firstName.trim(),
           lastName: lastName.trim(),
         });
         if (session) {
-          void navigate(next);
+          consumeAuthNext();
+          void navigate(next, { replace: true });
         } else {
           setNotice(
             `Check your email to confirm, then log in as ${toFullName(firstName, lastName)}.`,
@@ -89,28 +93,6 @@ function AuthForm({ mode }: AuthFormProps) {
       }
       setError(toUserMessage(caught, "Couldn't complete that. Try again."));
     } finally {
-      setBusy(false);
-    }
-  };
-
-  const startGoogle = async () => {
-    if (!authService.configured) {
-      setError(
-        "Authentication isn't connected yet. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to client/.env.local.",
-      );
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    try {
-      await authService.signInWithGoogle();
-    } catch (caught) {
-      setError(
-        toUserMessage(
-          caught,
-          "Google sign-in isn't configured yet. Please use email and password.",
-        ),
-      );
       setBusy(false);
     }
   };
@@ -184,29 +166,33 @@ function AuthForm({ mode }: AuthFormProps) {
       <Button className="w-full" type="submit" disabled={busy}>
         {mode === "login" ? "Log in" : "Create account"}
       </Button>
-      <Button
-        className="w-full"
-        type="button"
-        variant="outline"
-        disabled={busy}
-        onClick={() => void startGoogle()}
-      >
-        Continue with Google
-      </Button>
+      {mode === "signup" ? (
+        <p className="text-center text-xs leading-relaxed text-muted-foreground">
+          By creating an account you agree to the{" "}
+          <Link to={ROUTES.terms} className="link-hover text-foreground">
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link to={ROUTES.privacy} className="link-hover text-foreground">
+            Privacy Policy
+          </Link>
+          .
+        </p>
+      ) : null}
       {mode === "login" ? (
         <p className="text-center text-sm text-muted-foreground">
-          <Link to={ROUTES.resetPassword} className="text-foreground">
+          <Link to={ROUTES.resetPassword} className="link-hover text-foreground">
             Forgot password?
           </Link>
           {" · "}
-          <Link to={ROUTES.signup} className="text-foreground">
+          <Link to={authHref("signup", next)} className="link-hover text-foreground">
             Sign up
           </Link>
         </p>
       ) : (
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}
-          <Link to={ROUTES.login} className="text-foreground">
+          <Link to={authHref("login", next)} className="link-hover text-foreground">
             Log in
           </Link>
         </p>

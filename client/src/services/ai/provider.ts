@@ -1,3 +1,5 @@
+import { readOptionUrl } from "@/services/decision/option-url";
+
 export interface AiProvider {
   id: string;
   analyze?: never;
@@ -12,17 +14,18 @@ export interface ExtractionResult {
 
 /**
  * Provider-agnostic AI surface.
- * MVP uses a local/no-op implementation so DECIDE stays functional at ₹0.
+ * URL reading uses a free Edge Function that only parses public page markup.
  */
 export const aiProvider: AiProvider = {
   id: "local-none",
 };
 
 export async function extractFromUrl(url: string): Promise<ExtractionResult> {
-  void url;
+  const details = await readOptionUrl(url);
   return {
-    title: null,
+    title: details.title,
     text: null,
-    attributes: {},
+    attributes: details.price != null ? { price: String(details.price) } : {},
+    warning: details.readable ? undefined : "unreadable",
   };
 }

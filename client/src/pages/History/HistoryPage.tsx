@@ -73,7 +73,7 @@ function HistoryPage() {
               <li key={item.id}>
                 <Link
                   to={ROUTES.decision(item.id)}
-                  className="block rounded-3xl border border-white/8 p-5 transition-colors hover:border-white/16"
+                  className="surface-hover block rounded-3xl border border-white/8 p-5"
                 >
                   <p className="font-medium break-words">{item.question}</p>
                   <p className="mt-2 text-sm text-muted-foreground">
