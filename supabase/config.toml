@@ -4,7 +4,21 @@
 project_id = "decide"
 
 [functions.create-checkout]
-verify_jwt = true
+# Legacy platform JWT check only understands HS256. DECIDE user sessions are
+# issued with the project's current signing keys. Identity is still enforced
+# inside the function via auth.getUser(jwt) — unauthenticated callers get 401.
+verify_jwt = false
+
+[functions.read-option-url]
+# Public option-link lookup. The function only fetches HTTPS pages and
+# returns title/price hints. It does not require a user JWT so local
+# (logged-out) decisions still work. SSRF checks stay inside the function.
+verify_jwt = false
 
 [functions.razorpay-webhook]
+verify_jwt = false
+
+[functions.contact]
+# Public contact form. Delivery is done on the server so the visitor's
+# machine does not need a mail app. Identity is not required.
 verify_jwt = false

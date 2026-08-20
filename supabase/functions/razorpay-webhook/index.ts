@@ -1,5 +1,14 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
+type SubscriptionRow = {
+  user_id: string;
+  plan: string;
+  status: string;
+  razorpay_subscription_id: string | null;
+  current_period_start: string | null;
+  current_period_end: string | null;
+};
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
@@ -15,14 +24,11 @@ Deno.serve(async (req) => {
 
   const payload = JSON.parse(raw) as {
     event: string;
+    created_at?: number;
     payload?: Record<string, { entity?: Record<string, unknown> }>;
   };
 
-  const eventId =
-    (payload.payload?.subscription?.entity?.id as string | undefined) ??
-    (payload.payload?.payment?.entity?.id as string | undefined) ??
-    `${payload.event}:${Date.now()}`;
-  const uniqueId = `${payload.event}:${eventId}`;
+  const uniqueId = webhookEventId(payload);
 
   const admin = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
@@ -62,10 +68,11 @@ Deno.serve(async (req) => {
       .maybeSingle()
     : { data: null };
 
-  // Fail closed: only DECIDE plan IDs (env) or an already-stored DECIDE subscription.
+  const existingRow = (existing ?? null) as SubscriptionRow | null;
+
   const isDecideEvent = allowedPlanIds.length > 0 && (
     Boolean(razorpayPlanId && allowedPlanIds.includes(razorpayPlanId)) ||
-    Boolean(existing)
+    Boolean(existingRow)
   );
 
   if (!isDecideEvent) {
@@ -74,35 +81,11 @@ Deno.serve(async (req) => {
     });
   }
 
-  if (razorpaySubId) {
-    const status = mapStatus(payload.event);
-    if (status) {
-      const plan = planFromRazorpayId(razorpayPlanId) ??
-        (notes.plan === "premium" ? "premium" : notes.plan === "pro" ? "pro" : undefined);
-      const periodStart = subscription?.current_start
-        ? new Date(Number(subscription.current_start) * 1000).toISOString()
-        : new Date().toISOString();
-      const periodEnd = subscription?.current_end
-        ? new Date(Number(subscription.current_end) * 1000).toISOString()
-        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-
-      const userId = existing?.user_id ?? notes.user_id;
-      if (userId) {
-        await admin.from("subscriptions").upsert({
-          user_id: userId,
-          plan: plan ?? existing?.plan ?? "pro",
-          status,
-          razorpay_subscription_id: razorpaySubId,
-          current_period_start: periodStart,
-          current_period_end: periodEnd,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "user_id" });
-      }
-    }
-  }
+  const userId = existingRow?.user_id;
 
   if (payment) {
     await admin.from("payments").upsert({
+      user_id: userId ?? null,
       razorpay_payment_id: payment.id,
       razorpay_order_id: payment.order_id ?? null,
       razorpay_subscription_id: payment.subscription_id ?? razorpaySubId ?? null,
@@ -113,20 +96,123 @@ Deno.serve(async (req) => {
     }, { onConflict: "razorpay_payment_id" });
   }
 
+  if (razorpaySubId && userId) {
+    const next = nextSubscriptionState(payload.event, existingRow, {
+      razorpaySubId,
+      razorpayPlanId,
+      notesPlan: notes.plan,
+      periodStart: unixToIso(subscription?.current_start),
+      periodEnd: unixToIso(subscription?.current_end),
+    });
+    if (next) {
+      await admin.from("subscriptions").upsert({
+        user_id: userId,
+        plan: next.plan,
+        status: next.status,
+        razorpay_subscription_id: razorpaySubId,
+        current_period_start: next.current_period_start,
+        current_period_end: next.current_period_end,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "user_id" });
+    }
+  }
+
   return new Response(JSON.stringify({ ok: true }), {
     headers: { "Content-Type": "application/json" },
   });
 });
 
-function asNonEmptyString(value: unknown): string | undefined {
-  return typeof value === "string" && value.length > 0 ? value : undefined;
+function webhookEventId(payload: {
+  event: string;
+  created_at?: number;
+  payload?: Record<string, { entity?: Record<string, unknown> }>;
+}): string {
+  const event = payload.event || "unknown";
+  const paymentId = asNonEmptyString(payload.payload?.payment?.entity?.id);
+  if (paymentId) return `${event}:pay:${paymentId}`;
+  const subId = asNonEmptyString(payload.payload?.subscription?.entity?.id);
+  const createdAt = payload.created_at != null ? String(payload.created_at) : "";
+  if (subId && createdAt) return `${event}:sub:${subId}:${createdAt}`;
+  if (subId) return `${event}:sub:${subId}`;
+  if (createdAt) return `${event}:at:${createdAt}`;
+  return `${event}:body:${hash32(JSON.stringify(payload))}`;
 }
 
-function decideRazorpayPlanIds(): string[] {
-  return [
-    Deno.env.get("RAZORPAY_PLAN_PRO") ?? "",
-    Deno.env.get("RAZORPAY_PLAN_PREMIUM") ?? "",
-  ].filter((id) => id.length > 0);
+function nextSubscriptionState(
+  event: string,
+  existing: SubscriptionRow | null,
+  input: {
+    razorpaySubId: string;
+    razorpayPlanId: string | undefined;
+    notesPlan: string | undefined;
+    periodStart: string | undefined;
+    periodEnd: string | undefined;
+  },
+): {
+  plan: string;
+  status: "active" | "cancelled" | "expired" | "past_due" | "none";
+  current_period_start: string | null;
+  current_period_end: string | null;
+} | null {
+  if (
+    existing?.razorpay_subscription_id &&
+    existing.razorpay_subscription_id !== input.razorpaySubId
+  ) {
+    return null;
+  }
+
+  const plan = planFromRazorpayId(input.razorpayPlanId) ??
+    (input.notesPlan === "premium" ? "premium" : input.notesPlan === "pro" ? "pro" : undefined) ??
+    existing?.plan ??
+    "pro";
+
+  const periodStart = input.periodStart ?? existing?.current_period_start ?? null;
+  const periodEnd = input.periodEnd ?? existing?.current_period_end ?? null;
+
+  if (event === "payment.failed") {
+    if (existing?.status === "active") return null;
+    return null;
+  }
+
+  const mapped = mapEventStatus(event);
+  if (!mapped) return null;
+
+  if (
+    mapped === "active" &&
+    (existing?.status === "cancelled" || existing?.status === "expired") &&
+    existing.razorpay_subscription_id === input.razorpaySubId
+  ) {
+    return null;
+  }
+
+  return {
+    plan,
+    status: mapped,
+    current_period_start: periodStart,
+    current_period_end: periodEnd,
+  };
+}
+
+function mapEventStatus(
+  event: string,
+): "active" | "cancelled" | "expired" | "past_due" | null {
+  switch (event) {
+    case "subscription.activated":
+    case "subscription.charged":
+    case "subscription.resumed":
+      return "active";
+    case "subscription.authenticated":
+      return null;
+    case "subscription.cancelled":
+      return "cancelled";
+    case "subscription.halted":
+    case "subscription.paused":
+      return "past_due";
+    case "subscription.completed":
+      return "expired";
+    default:
+      return null;
+  }
 }
 
 function planFromRazorpayId(planId: string | undefined): "pro" | "premium" | undefined {
@@ -137,24 +223,28 @@ function planFromRazorpayId(planId: string | undefined): "pro" | "premium" | und
   return undefined;
 }
 
-function mapStatus(event: string): "active" | "cancelled" | "expired" | "past_due" | null {
-  switch (event) {
-    case "subscription.authenticated":
-    case "subscription.activated":
-    case "subscription.charged":
-    case "subscription.resumed":
-      return "active";
-    case "subscription.cancelled":
-    case "subscription.halted":
-      return "cancelled";
-    case "subscription.completed":
-      return "expired";
-    case "subscription.paused":
-    case "payment.failed":
-      return "past_due";
-    default:
-      return null;
+function decideRazorpayPlanIds(): string[] {
+  return [
+    Deno.env.get("RAZORPAY_PLAN_PRO") ?? "",
+    Deno.env.get("RAZORPAY_PLAN_PREMIUM") ?? "",
+  ].filter((id) => id.length > 0);
+}
+
+function unixToIso(value: unknown): string | undefined {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return undefined;
+  return new Date(value * 1000).toISOString();
+}
+
+function asNonEmptyString(value: unknown): string | undefined {
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function hash32(text: string): string {
+  let hash = 0;
+  for (let index = 0; index < text.length; index += 1) {
+    hash = (hash * 31 + text.charCodeAt(index)) | 0;
   }
+  return Math.abs(hash).toString(16);
 }
 
 async function verifySignature(body: string, signature: string, secret: string) {

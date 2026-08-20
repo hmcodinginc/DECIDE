@@ -30,13 +30,13 @@ function AccordionTrigger({
     <AccordionPrimitive.Header className="flex">
       <AccordionPrimitive.Trigger
         className={cn(
-          "flex flex-1 items-center justify-between gap-4 py-5 text-left text-base font-medium transition-colors hover:text-gold [&[data-state=open]>svg]:rotate-180",
+          "group flex flex-1 items-center justify-between gap-4 py-5 text-left text-base font-medium transition-colors duration-200 hover:text-gold [&[data-state=open]>svg]:rotate-180",
           className,
         )}
         {...props}
       >
         {children}
-        <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform duration-200" />
+        <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-[transform,color] duration-200 group-hover:text-gold" />
       </AccordionPrimitive.Trigger>
     </AccordionPrimitive.Header>
   );

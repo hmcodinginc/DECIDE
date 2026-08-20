@@ -23,7 +23,7 @@ function UpgradePanel({ onSelect }: UpgradePanelProps) {
       </div>
       <p className="mt-8 text-sm text-muted-foreground">
         Changed your mind?{" "}
-        <Link to={ROUTES.home} className="text-foreground underline">
+        <Link to={ROUTES.home} className="link-hover text-foreground">
           Back to DECIDE
         </Link>
       </p>

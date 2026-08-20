@@ -139,7 +139,65 @@ export const router = createBrowserRouter([
         lazy: () =>
           lazyRoute(async () => {
             const { BillingPage } = await import("@/pages/Billing/BillingPage");
-            return { Component: BillingPage };
+            return {
+              Component: function BillingProtected() {
+                return (
+                  <ProtectedRoute>
+                    <BillingPage />
+                  </ProtectedRoute>
+                );
+              },
+            };
+          }),
+      },
+      {
+        path: "billing/return",
+        lazy: () =>
+          lazyRoute(async () => {
+            const { BillingReturnPage } = await import(
+              "@/pages/Billing/BillingReturnPage"
+            );
+            return {
+              Component: function BillingReturnProtected() {
+                return (
+                  <ProtectedRoute>
+                    <BillingReturnPage />
+                  </ProtectedRoute>
+                );
+              },
+            };
+          }),
+      },
+      {
+        path: "terms",
+        lazy: () =>
+          lazyRoute(async () => {
+            const { TermsPage } = await import("@/pages/Legal/TermsPage");
+            return { Component: TermsPage };
+          }),
+      },
+      {
+        path: "privacy",
+        lazy: () =>
+          lazyRoute(async () => {
+            const { PrivacyPage } = await import("@/pages/Legal/PrivacyPage");
+            return { Component: PrivacyPage };
+          }),
+      },
+      {
+        path: "about",
+        lazy: () =>
+          lazyRoute(async () => {
+            const { AboutPage } = await import("@/pages/Legal/AboutPage");
+            return { Component: AboutPage };
+          }),
+      },
+      {
+        path: "contact",
+        lazy: () =>
+          lazyRoute(async () => {
+            const { ContactPage } = await import("@/pages/Legal/ContactPage");
+            return { Component: ContactPage };
           }),
       },
       {

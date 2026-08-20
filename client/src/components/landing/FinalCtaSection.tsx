@@ -6,7 +6,7 @@ import { ROUTES } from "@/config/routes";
 function FinalCtaSection() {
   return (
     <Section className="pb-28">
-      <div className="rounded-[2rem] border border-gold/20 bg-gold-soft px-6 py-16 text-center sm:px-12">
+      <div className="surface-hover rounded-[2rem] border border-gold/20 bg-gold-soft px-6 py-16 text-center sm:px-12">
         <p className="text-xs tracking-[0.28em] text-gold uppercase">DECIDE</p>
         <h2 className="font-display mt-4 text-4xl text-balance sm:text-6xl">
           Stop comparing. DECIDE.

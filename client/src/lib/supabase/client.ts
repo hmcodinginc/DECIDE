@@ -5,7 +5,7 @@ import {
   supabaseUrl,
 } from "@/lib/supabase/config";
 
-export { isSupabaseConfigured };
+export { isSupabaseConfigured, supabaseUrl, supabaseAnonKey };
 
 export const supabase: SupabaseClient | null = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey, {

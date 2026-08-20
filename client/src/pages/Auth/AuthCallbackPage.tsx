@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Container } from "@/components/common/Container";
 import { ROUTES } from "@/config/routes";
+import { consumeAuthNext, readSafeNext } from "@/lib/auth-next";
 import { toUserMessage } from "@/lib/errors";
 import { authService } from "@/services/auth/auth-service";
 
@@ -11,6 +12,12 @@ function AuthCallbackPage() {
 
   useEffect(() => {
     let active = true;
+    let dest: string | null = null;
+    const resolvedDest = () => {
+      dest ??= readSafeNext(consumeAuthNext());
+      return dest;
+    };
+
     const params = new URLSearchParams(window.location.search);
     const errorDescription = params.get("error_description") ?? params.get("error");
     if (errorDescription) {
@@ -26,14 +33,19 @@ function AuthCallbackPage() {
       return () => window.clearTimeout(timer);
     }
 
+    const go = () => {
+      if (!active) return;
+      void navigate(resolvedDest(), { replace: true });
+    };
+
     const unsubscribe = authService.onAuthChange((user) => {
       if (!active) return;
-      if (user) void navigate(ROUTES.app, { replace: true });
+      if (user) go();
     });
 
     void authService.getSession().then((session) => {
       if (!active) return;
-      if (session) void navigate(ROUTES.app, { replace: true });
+      if (session) go();
     });
 
     const timeout = window.setTimeout(() => {

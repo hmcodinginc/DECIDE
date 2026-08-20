@@ -1,8 +1,8 @@
 import { Navigate, useLocation } from "react-router";
 import type { ReactNode } from "react";
-import { ROUTES } from "@/config/routes";
 import { useAuth } from "@/hooks/useAuth";
 import { PageSkeleton } from "@/components/common/PageSkeleton";
+import { authHref, rememberAuthNext } from "@/lib/auth-next";
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -10,9 +10,11 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 
   if (loading) return <PageSkeleton />;
   if (!user) {
+    const next = `${location.pathname}${location.search}`;
+    rememberAuthNext(next);
     return (
       <Navigate
-        to={`${ROUTES.login}?next=${encodeURIComponent(location.pathname)}`}
+        to={authHref("login", next)}
         replace
       />
     );

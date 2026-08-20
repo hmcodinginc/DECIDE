@@ -11,7 +11,7 @@ function FloatingOptions() {
   const reduce = useReducedMotion();
 
   return (
-    <div className="pointer-events-none absolute inset-0 hidden md:block">
+    <div className="pointer-events-none absolute inset-0 hidden overflow-hidden lg:block">
       {CARDS.map((card) => (
         <motion.div
           key={card.label}

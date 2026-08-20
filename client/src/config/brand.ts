@@ -4,6 +4,9 @@ export const BRAND = {
   url: "https://decide.hmcoding.com",
   tagline: "Stop comparing. Get a decision.",
   promise: "Too many choices. One clear answer.",
+  operator: "HM Coding",
+  contactEmail: "hmcoding.h@gmail.com",
+  copyrightFrom: 2026,
 } as const;
 
 const configuredSite = import.meta.env.VITE_SITE_URL?.replace(/\/$/, "");

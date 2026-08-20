@@ -2,6 +2,7 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Reveal } from "@/components/common/Reveal";
 import { Section } from "@/components/common/Section";
+import { cn } from "@/lib/utils";
 
 const EXAMPLES = [
   {
@@ -65,11 +66,12 @@ function ExamplesSection() {
               key={item.title}
               type="button"
               onClick={() => setActive(item.title)}
-              className={
+              className={cn(
+                "rounded-full px-4 py-2 text-sm transition-[color,background-color,border-color,box-shadow] duration-200",
                 item.title === active
-                  ? "rounded-full bg-primary px-4 py-2 text-sm text-primary-foreground"
-                  : "rounded-full border border-white/10 px-4 py-2 text-sm text-muted-foreground hover:text-foreground"
-              }
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                  : "chip-hover border border-white/10 text-muted-foreground",
+              )}
             >
               {item.title}
             </button>
@@ -88,7 +90,7 @@ function ExamplesSection() {
             <p className="mt-4 text-xs tracking-[0.22em] text-gold uppercase">
               DECIDE recommends
             </p>
-            <p className="font-display mt-2 text-3xl">{current.pick}</p>
+            <p className="font-display mt-2 text-3xl break-words text-balance">{current.pick}</p>
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
               {current.why}
             </p>
