@@ -12,7 +12,7 @@ const BLOCKED_PREFIXES = [
 
 export function readSafeNext(
   raw: string | null | undefined,
-  fallback = ROUTES.app,
+  fallback: string = ROUTES.app,
 ): string {
   if (!raw) return fallback;
   let path = raw.trim();
@@ -36,10 +36,52 @@ export function readSafeNext(
   return path;
 }
 
-export function authHref(mode: "login" | "signup", next: string): string {
+export type AuthGateReason = "limit" | "account";
+
+export function authHref(
+  mode: "login" | "signup",
+  next: string,
+  extra?: { reason?: string | null },
+): string {
   const safe = readSafeNext(next);
   const route = mode === "login" ? ROUTES.login : ROUTES.signup;
-  return `${route}?next=${encodeURIComponent(safe)}`;
+  const params = new URLSearchParams();
+  params.set("next", safe);
+  if (extra?.reason === "limit" || extra?.reason === "account") {
+    params.set("reason", extra.reason);
+  }
+  return `${route}?${params.toString()}`;
+}
+
+export function hasAnalysisLimitReason(params: URLSearchParams): boolean {
+  return readAuthGateReason(params) === "limit";
+}
+
+export function authReasonForDestination(
+  pathname: string,
+  search = "",
+): AuthGateReason | null {
+  const params = new URLSearchParams(
+    search.startsWith("?") ? search.slice(1) : search,
+  );
+  if (params.get("reason") === "limit") return "limit";
+  if (pathname === ROUTES.newDecision) return "account";
+  return null;
+}
+
+export function readAuthGateReason(params: URLSearchParams): AuthGateReason | null {
+  const explicit = params.get("reason");
+  if (explicit === "limit") return "limit";
+  if (explicit === "account") return "account";
+  const next = params.get("next");
+  if (!next) return null;
+  const safe = readSafeNext(next, "");
+  if (!safe) return null;
+  const pathname = safe.split("?")[0] ?? "";
+  const query = safe.includes("?") ? (safe.split("?")[1] ?? "") : "";
+  if (new URLSearchParams(query).get("reason") === "limit") return "limit";
+  if (pathname === ROUTES.newDecision) return "account";
+  return null;
 }
 
 export function billingPathForPlan(plan: "pro" | "premium"): string {

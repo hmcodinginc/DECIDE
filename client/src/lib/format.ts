@@ -1,3 +1,18 @@
+const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+/** Spreadsheet-style labels: A…Z, AA…AZ, BA…ZZ, AAA… Presentation only. */
+export function optionLetterLabel(index: number): string {
+  if (!Number.isInteger(index) || index < 0) return "";
+  let n = index + 1;
+  let label = "";
+  while (n > 0) {
+    const rem = (n - 1) % 26;
+    label = `${LETTERS[rem] ?? ""}${label}`;
+    n = Math.floor((n - 1) / 26);
+  }
+  return label;
+}
+
 export function formatInr(amount: number): string {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",

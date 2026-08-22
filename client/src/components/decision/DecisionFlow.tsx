@@ -11,6 +11,7 @@ import { ROUTES } from "@/config/routes";
 import { nowIso } from "@/lib/format";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntitlements } from "@/hooks/useEntitlements";
+import { authHref, rememberAuthNext } from "@/lib/auth-next";
 import { toUserMessage } from "@/lib/errors";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { track } from "@/lib/product-log";
@@ -23,6 +24,7 @@ import type { DecisionRecord } from "@/types/decision";
 
 const STEPS = ["question", "options", "priorities", "ratings"] as const;
 type Step = (typeof STEPS)[number];
+const LIMIT_BILLING = `${ROUTES.billing}?reason=limit`;
 
 function DecisionFlow() {
   const navigate = useNavigate();
@@ -56,11 +58,20 @@ function DecisionFlow() {
 
   const go = (next: Step) => setStep(next);
 
+  const goToAnalysisLimit = () => {
+    void track("free_limit_reached");
+    if (!user) {
+      rememberAuthNext(LIMIT_BILLING);
+      void navigate(authHref("login", LIMIT_BILLING, { reason: "limit" }));
+      return;
+    }
+    void navigate(LIMIT_BILLING);
+  };
+
   const finish = async (record: DecisionRecord = decision) => {
     if (finishing.current || busy) return;
     if (entitlement && !entitlement.canAnalyze) {
-      void navigate(`${ROUTES.billing}?reason=limit`);
-      void track("free_limit_reached");
+      goToAnalysisLimit();
       return;
     }
     finishing.current = true;
@@ -100,14 +111,12 @@ function DecisionFlow() {
         console.error("[decide] finish failed", err?.code ?? "", err?.message ?? "");
       }
       if (caught instanceof LimitReachedError) {
-        void track("free_limit_reached");
-        void navigate(`${ROUTES.billing}?reason=limit`);
+        goToAnalysisLimit();
         return;
       }
       const err = caught as Error & { code?: string };
       if (err.code === "LIMIT_REACHED") {
-        void track("free_limit_reached");
-        void navigate(`${ROUTES.billing}?reason=limit`);
+        goToAnalysisLimit();
         return;
       }
       setError(

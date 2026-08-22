@@ -45,7 +45,15 @@ export const router = createBrowserRouter([
             const { NewDecisionPage } = await import(
               "@/pages/Decision/NewDecisionPage"
             );
-            return { Component: NewDecisionPage };
+            return {
+              Component: function NewDecisionProtected() {
+                return (
+                  <ProtectedRoute>
+                    <NewDecisionPage />
+                  </ProtectedRoute>
+                );
+              },
+            };
           }),
       },
       {

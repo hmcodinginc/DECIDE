@@ -1,3 +1,4 @@
+import { ChevronDown, CircleUser } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { BrandMark } from "@/components/common/BrandMark";
 import { Container } from "@/components/common/Container";
@@ -49,10 +50,20 @@ function SiteHeader() {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="max-w-[9.5rem] min-w-0 px-2 sm:max-w-[14rem] sm:px-4">
-                  <span className="truncate">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label="Open account menu"
+                  title="Account and settings"
+                  className="max-w-[12rem] min-w-0 gap-2 px-1.5 sm:max-w-[16rem] sm:px-2"
+                >
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gold-soft text-gold ring-1 ring-gold/30">
+                    <CircleUser aria-hidden />
+                  </span>
+                  <span className="hidden min-w-0 truncate sm:inline">
                     {user.displayName ?? user.email ?? "Account"}
                   </span>
+                  <ChevronDown className="shrink-0 text-muted-foreground" aria-hidden />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
