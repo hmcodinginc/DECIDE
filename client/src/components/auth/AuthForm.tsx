@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ROUTES } from "@/config/routes";
-import { authHref, consumeAuthNext, readSafeNext, rememberAuthNext } from "@/lib/auth-next";
+import { useLoginCooldown } from "@/hooks/useLoginCooldown";
+import { authHref, consumeAuthNext, readAuthGateReason, readSafeNext, rememberAuthNext } from "@/lib/auth-next";
 import { toUserMessage } from "@/lib/errors";
 import { firstNameSchema, lastNameSchema, toFullName, emailSchema, passwordSchema, signupPasswordSchema } from "@/lib/validation/auth";
 import { authService } from "@/services/auth/auth-service";
@@ -18,6 +19,8 @@ function AuthForm({ mode }: AuthFormProps) {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const next = readSafeNext(params.get("next"));
+  const gateReason = readAuthGateReason(params);
+  const reasonExtra = gateReason ? { reason: gateReason } : undefined;
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -26,9 +29,11 @@ function AuthForm({ mode }: AuthFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const cooldown = useLoginCooldown(mode === "login");
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (mode === "login" && cooldown.locked) return;
     const emailResult = emailSchema.safeParse(email);
     const passwordResult =
       mode === "signup"
@@ -70,6 +75,7 @@ function AuthForm({ mode }: AuthFormProps) {
     try {
       if (mode === "login") {
         await authService.signInWithPassword(emailResult.data, password);
+        cooldown.clear();
         consumeAuthNext();
         void navigate(next, { replace: true });
       } else {
@@ -91,6 +97,7 @@ function AuthForm({ mode }: AuthFormProps) {
         const err = caught as { message?: string; code?: string; status?: number };
         console.error("[decide] auth failed", err?.status ?? "", err?.code ?? "", err?.message ?? "");
       }
+      if (mode === "login") cooldown.recordFailure();
       setError(toUserMessage(caught, "Couldn't complete that. Try again."));
     } finally {
       setBusy(false);
@@ -163,8 +170,17 @@ function AuthForm({ mode }: AuthFormProps) {
       ) : null}
       {error ? <p className="text-sm text-red-300">{error}</p> : null}
       {notice ? <p className="text-sm text-gold">{notice}</p> : null}
-      <Button className="w-full" type="submit" disabled={busy}>
-        {mode === "login" ? "Log in" : "Create account"}
+      {mode === "login" && cooldown.locked ? (
+        <p className="text-sm text-gold" role="status">
+          Too many failed attempts. Try again in {cooldown.remainingSeconds} seconds.
+        </p>
+      ) : null}
+      <Button className="w-full" type="submit" disabled={busy || cooldown.locked}>
+        {mode === "login"
+          ? cooldown.locked
+            ? `Try again in ${cooldown.remainingSeconds}s`
+            : "Log in"
+          : "Create account"}
       </Button>
       {mode === "signup" ? (
         <p className="text-center text-xs leading-relaxed text-muted-foreground">
@@ -185,14 +201,14 @@ function AuthForm({ mode }: AuthFormProps) {
             Forgot password?
           </Link>
           {" · "}
-          <Link to={authHref("signup", next)} className="link-hover text-foreground">
+          <Link to={authHref("signup", next, reasonExtra)} className="link-hover text-foreground">
             Sign up
           </Link>
         </p>
       ) : (
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}
-          <Link to={authHref("login", next)} className="link-hover text-foreground">
+          <Link to={authHref("login", next, reasonExtra)} className="link-hover text-foreground">
             Log in
           </Link>
         </p>

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { optionLetterLabel } from "@/lib/format";
 import { optionInputSchema } from "@/lib/validation/decision";
 import { emptyOption } from "@/services/decision/engine";
 import { OptionUrlField } from "@/components/decision/OptionUrlField";
@@ -67,7 +68,7 @@ function OptionsStep({ options, onChange, onBack, onContinue }: OptionsStepProps
           <div key={option.id} className="rounded-3xl border border-white/8 p-5">
             <div className="flex items-center justify-between gap-3">
               <p className="text-xs tracking-[0.18em] text-muted-foreground uppercase">
-                Option {String.fromCharCode(65 + index)}
+                Option {optionLetterLabel(index)}
               </p>
               {options.length > 2 ? (
                 <button

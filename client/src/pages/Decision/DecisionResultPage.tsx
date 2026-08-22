@@ -59,7 +59,15 @@ function DecisionResultPage() {
       toast.error(saved.warning);
       return;
     }
-    toast.success("Decision saved.");
+    toast.success("Decision saved.", {
+      duration: 8000,
+      action: {
+        label: "View saved decisions",
+        onClick: () => {
+          void navigate(ROUTES.history);
+        },
+      },
+    });
     void track("decision_saved");
   };
 

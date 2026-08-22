@@ -1,7 +1,7 @@
 import { Link } from "react-router";
 import { PricingCards } from "@/components/pricing/PricingCards";
+import { GUEST_ANALYSIS_LIMIT, type PlanId } from "@/config/plans";
 import { ROUTES } from "@/config/routes";
-import type { PlanId } from "@/config/plans";
 
 interface UpgradePanelProps {
   onSelect: (plan: PlanId) => void;
@@ -12,11 +12,11 @@ function UpgradePanel({ onSelect }: UpgradePanelProps) {
     <div className="mx-auto max-w-5xl">
       <p className="text-xs tracking-[0.22em] text-gold uppercase">Keep deciding</p>
       <h1 className="font-display mt-3 text-3xl text-balance sm:text-5xl">
-        You&apos;ve used your free decisions.
+        You&apos;ve used all {GUEST_ANALYSIS_LIMIT} free analyses.
       </h1>
       <p className="mt-4 max-w-xl text-muted-foreground">
-        DECIDE already showed you what a clear answer feels like. Pro and Premium
-        keep that going — without dark patterns, without nagging.
+        Upgrade to Pro or Premium to keep getting clear recommendations — without
+        dark patterns, without nagging.
       </p>
       <div className="mt-10">
         <PricingCards onSelect={onSelect} />
